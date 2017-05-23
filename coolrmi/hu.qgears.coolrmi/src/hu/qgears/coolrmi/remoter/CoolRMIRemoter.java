@@ -66,6 +66,16 @@ public class CoolRMIRemoter {
 	private Executor serverSideExecutor = null;
 	private boolean guaranteeOrdering;
 	private Map<Long, CoolRMIFutureReply> replies = new HashMap<Long, CoolRMIFutureReply>();
+	private ISerializer serializer = new JavaSerializer();
+
+	public ISerializer getSerializer() {
+		return serializer;
+	}
+
+	public void setSerializer(ISerializer serializer) {
+		this.serializer = serializer;
+	}
+
 	/**
 	 * The client side proxy objects.
 	 */
@@ -138,7 +148,7 @@ public class CoolRMIRemoter {
 	}
 
 	public void send(AbstractCoolRMIMessage message) throws IOException {
-		byte[] bs = UtilSerializator.serialize(servicesReg, message);
+		byte[] bs = serializer.serialize(servicesReg, message);
 		multiplexer.addMessageToSend(bs, message);
 	}
 	/**
@@ -162,7 +172,7 @@ public class CoolRMIRemoter {
 
 	public void messageReceived(byte[] msg) {
 		try {
-			Object message = UtilSerializator.deserialize(msg, classLoader);
+			Object message = serializer.deserialize(msg, classLoader);
 			if (message instanceof AbstractCoolRMICall) {
 				AbstractCoolRMICall call = (AbstractCoolRMICall) message;
 				doCall(call);

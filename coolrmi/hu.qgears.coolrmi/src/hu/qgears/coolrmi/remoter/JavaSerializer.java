@@ -9,15 +9,9 @@ import hu.qgears.coolrmi.CoolRMIObjectOutputStream;
 
 
 
-public class UtilSerializator {
-	/**
-	 * 
-	 * @param serviceReg used to look for object replaces.
-	 * @param o
-	 * @return
-	 * @throws IOException
-	 */
-	public static byte[] serialize(CoolRMIServiceRegistry serviceReg, Object o) throws IOException
+public class JavaSerializer implements ISerializer {
+	@Override
+	public byte[] serialize(CoolRMIServiceRegistry serviceReg, Object o) throws IOException
 	{
 		ByteArrayOutputStream bos=new ByteArrayOutputStream();
 		CoolRMIObjectOutputStream oos=new CoolRMIObjectOutputStream(serviceReg, bos);
@@ -25,7 +19,8 @@ public class UtilSerializator {
 		oos.close();
 		return bos.toByteArray();
 	}
-	public static Object deserialize(byte[] bs, ClassLoader classLoader) throws IOException, ClassNotFoundException
+	@Override
+	public Object deserialize(byte[] bs, ClassLoader classLoader) throws IOException, ClassNotFoundException
 	{
 		ByteArrayInputStream bis=new ByteArrayInputStream(bs);
 		CoolRMIObjectInputStream ois=new CoolRMIObjectInputStream(classLoader, bis);
