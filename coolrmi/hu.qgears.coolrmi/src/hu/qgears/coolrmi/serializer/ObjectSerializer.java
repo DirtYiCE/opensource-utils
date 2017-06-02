@@ -44,7 +44,7 @@ class ObjectSerializer extends TypeSerializer {
 	@Override
 	public void serialize(PortableSerializer serializer,
 			Object o, OutputStream os)
-			throws Exception {
+			throws IOException {
 		Class<?> cls = o.getClass();
 
 		while (PortableSerializable.class.isAssignableFrom(cls)) {
@@ -57,7 +57,17 @@ class ObjectSerializer extends TypeSerializer {
 					Utils.writeString(os, f.getName());
 					f.setAccessible(true);
 					Class<?> x = null; // TODO serializer.getClassForSerialization(f.getType());
-					serializer.serialize(os, f.get(o), x);
+					Object fieldVal = null;
+					try {
+						fieldVal = f.get(o);
+					} catch (IllegalArgumentException e) {
+						// shouldn't happen
+						throw new RuntimeException(e);
+					} catch (IllegalAccessException e) {
+						// shouldn't happen
+						throw new RuntimeException(e);
+					}
+					serializer.serialize(os, fieldVal, x);
 				}
 			}
 

@@ -25,7 +25,7 @@ public abstract class TypeSerializer {
 			throws IOException, ClassNotFoundException;
 
 	public abstract void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws Exception;
+			OutputStream os) throws IOException;
 
 	public abstract Object deserialize(PortableSerializer serializer,
 			InputStream is, ClassLoader classLoader, Class<?> cls)

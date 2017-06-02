@@ -41,7 +41,7 @@ class ArraySerializer extends TypeSerializer {
 
 	@Override
 	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws Exception {
+			OutputStream os) throws IOException {
 		int len = Array.getLength(o);
 		Utils.write32(os, len);
 

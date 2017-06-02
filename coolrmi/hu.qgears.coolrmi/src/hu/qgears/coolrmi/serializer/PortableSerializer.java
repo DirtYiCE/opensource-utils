@@ -60,13 +60,7 @@ public class PortableSerializer implements ISerializer {
 	public byte[] serialize(CoolRMIServiceRegistry serviceReg, Object o)
 			throws IOException {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
-		try {
-			serialize(os, o, null);
-		} catch (IOException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		serialize(os, o, null);
 		return os.toByteArray();
 	}
 
@@ -94,7 +88,7 @@ public class PortableSerializer implements ISerializer {
 		return ser.isPolymorphic() ? null : cls;
 	}
 
-	void serialize(OutputStream os, Object o, Class<?> cls) throws Exception {
+	void serialize(OutputStream os, Object o, Class<?> cls) throws IOException {
 		TypeSerializer s;
 
 		boolean full = cls == null;
@@ -115,17 +109,9 @@ public class PortableSerializer implements ISerializer {
 
 	@Override
 	public Object deserialize(byte[] bs, ClassLoader classLoader)
-			throws IOException, ClassNotFoundException {
+			throws Exception {
 		ByteArrayInputStream is = new ByteArrayInputStream(bs);
-		try {
-			return deserialize(is, classLoader, null);
-		} catch (IOException e) {
-			throw e;
-		} catch (ClassNotFoundException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
+		return deserialize(is, classLoader, null);
 	}
 
 	Object deserialize(InputStream is, ClassLoader classLoader,

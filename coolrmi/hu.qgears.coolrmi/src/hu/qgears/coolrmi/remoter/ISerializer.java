@@ -14,5 +14,5 @@ public interface ISerializer {
 			throws IOException;
 
 	public Object deserialize(byte[] bs, ClassLoader classLoader)
-			throws IOException, ClassNotFoundException;
+			throws Exception;
 }
