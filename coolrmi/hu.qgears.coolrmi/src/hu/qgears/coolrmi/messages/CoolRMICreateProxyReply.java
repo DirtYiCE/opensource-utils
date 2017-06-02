@@ -2,10 +2,12 @@ package hu.qgears.coolrmi.messages;
 
 import java.io.Serializable;
 
+import hu.qgears.coolrmi.serializer.PortableSerializable;
+
 
 public class CoolRMICreateProxyReply
 	extends AbstractCoolRMIReply
-	implements Serializable {
+	implements Serializable, PortableSerializable {
 	private static final long serialVersionUID = 1L;
 
 	public CoolRMICreateProxyReply() {

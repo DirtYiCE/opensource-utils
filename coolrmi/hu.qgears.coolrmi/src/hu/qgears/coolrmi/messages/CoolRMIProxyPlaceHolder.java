@@ -2,6 +2,8 @@ package hu.qgears.coolrmi.messages;
 
 import java.io.Serializable;
 
+import hu.qgears.coolrmi.serializer.PortableSerializable;
+
 /**
  * A placholder for proxy objects on communication line.
  * 
@@ -15,7 +17,7 @@ import java.io.Serializable;
  * @author rizsi
  *
  */
-public class CoolRMIProxyPlaceHolder implements Serializable {
+public class CoolRMIProxyPlaceHolder implements Serializable, PortableSerializable {
 	private static final long serialVersionUID = 1L;
 	private long proxyId;
 

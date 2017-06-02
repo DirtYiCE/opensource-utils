@@ -2,6 +2,7 @@ Manifest-Version: 1.0
 Export-Package: hu.qgears.coolrmi,
  hu.qgears.coolrmi.messages,
  hu.qgears.coolrmi.remoter,
+ hu.qgears.coolrmi.serializer,
  hu.qgears.coolrmi.streams
 Bundle-SymbolicName: hu.qgears.coolrmi
 Bundle-Version: 6.8.0.qualifier

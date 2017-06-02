@@ -25,6 +25,7 @@ import java.util.concurrent.Executor;
 import hu.qgears.coolrmi.CoolRMIException;
 import hu.qgears.coolrmi.remoter.CoolRMIRemoter;
 import hu.qgears.coolrmi.remoter.CoolRMIServerSideObject;
+import hu.qgears.coolrmi.serializer.PortableSerializable;
 
 
 /**
@@ -34,7 +35,7 @@ import hu.qgears.coolrmi.remoter.CoolRMIServerSideObject;
  */
 public class CoolRMICall
 	extends AbstractCoolRMICall
-	implements Serializable{
+	implements Serializable, PortableSerializable {
 	private static final long serialVersionUID = 1L;
 	private String method;
 	private Object[] args;

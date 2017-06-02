@@ -7,11 +7,13 @@ import java.io.ObjectOutput;
 import java.util.concurrent.TimeUnit;
 
 import hu.qgears.commons.signal.SignalFutureWrapper;
+import hu.qgears.coolrmi.serializer.PortableSerializable;
 
-public class CoolRMIDisconnect extends AbstractCoolRMIMessage implements Externalizable
+public class CoolRMIDisconnect extends AbstractCoolRMIMessage
+		implements Externalizable, PortableSerializable
 {
 	private static final long serialVersionUID = 1L;
-	private SignalFutureWrapper<Object> sent=new SignalFutureWrapper<Object>();
+	private transient SignalFutureWrapper<Object> sent=new SignalFutureWrapper<Object>();
 
 	@Override
 	public String getName() {

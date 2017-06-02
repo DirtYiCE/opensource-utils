@@ -2,7 +2,9 @@ package hu.qgears.coolrmi.messages;
 
 import java.io.Serializable;
 
-abstract public class AbstractCoolRMIMessage implements Serializable {
+import hu.qgears.coolrmi.serializer.PortableSerializable;
+
+abstract public class AbstractCoolRMIMessage implements Serializable, PortableSerializable {
 	private static final long serialVersionUID = 1L;
 	protected long queryId;
 	public AbstractCoolRMIMessage()
