@@ -10,11 +10,6 @@ class CharSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is) {
-		return Character.class;
-	}
-
-	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
 		Utils.write16(os, (short) (char) (Character) o);

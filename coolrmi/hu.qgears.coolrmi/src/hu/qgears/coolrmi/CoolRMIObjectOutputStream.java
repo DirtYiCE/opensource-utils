@@ -25,19 +25,10 @@ public class CoolRMIObjectOutputStream extends ObjectOutputStream
 
 	@Override
 	protected Object replaceObject(Object obj) throws IOException {
-		Object ret=reg.replaceObject(obj);
-		if(ret==null)
-		{
-			if(!(obj instanceof Serializable))
-			{
-				ret=reg.replaceObjectHeavy(obj);
-				if(ret!=null)
-				{
-					return ret;
-				}
-			}
-			return super.replaceObject(obj);
+		if(!(obj instanceof Serializable)) {
+			return reg.replaceObject(obj);
 		}
-		return ret;
+
+		return super.replaceObject(obj);
 	}
 }

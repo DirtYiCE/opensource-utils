@@ -10,11 +10,6 @@ class BooleanSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is) {
-		return Boolean.class;
-	}
-
-	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
 		Utils.writeBool(os, (Boolean) o);

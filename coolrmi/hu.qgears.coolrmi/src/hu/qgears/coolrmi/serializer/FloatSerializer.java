@@ -10,11 +10,6 @@ class FloatSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is) {
-		return Float.class;
-	}
-
-	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
 		Utils.write32(os, Float.floatToRawIntBits((Float) o));

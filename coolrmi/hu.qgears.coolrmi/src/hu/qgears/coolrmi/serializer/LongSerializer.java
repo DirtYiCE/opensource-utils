@@ -10,11 +10,6 @@ class LongSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is) {
-		return Long.class;
-	}
-
-	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
 		Utils.write64(os, (Long) o);

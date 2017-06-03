@@ -10,11 +10,6 @@ class ByteSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is) {
-		return Byte.class;
-	}
-
-	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
 		os.write((Byte) o);

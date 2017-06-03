@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 
 import hu.qgears.coolrmi.remoter.AbstractSerializer;
+import hu.qgears.coolrmi.remoter.CoolRMIServiceRegistry;
+import hu.qgears.coolrmi.remoter.IReplaceSerializable;
 
 public class PortableSerializer extends AbstractSerializer {
 	private static final TypeSerializer[] serializers = new TypeSerializer[] {
@@ -63,6 +65,10 @@ public class PortableSerializer extends AbstractSerializer {
 	}
 
 	TypeSerializer getSerializer(Class<?> cls) {
+		if (getServiceRegistry().getReplacer(cls) != null) {
+			cls = IReplaceSerializable.class;
+		}
+
 		TypeSerializer s = classMap.get(cls);
 		if (s == null) {
 			for (TypeSerializer sc : specialSerializer) {
@@ -88,6 +94,7 @@ public class PortableSerializer extends AbstractSerializer {
 
 	void serialize(OutputStream os, Object o, Class<?> cls) throws IOException {
 		TypeSerializer s;
+		o = getServiceRegistry().replaceObject(o);
 
 		boolean full = cls == null;
 		if (cls == null && o == null) {
@@ -123,7 +130,18 @@ public class PortableSerializer extends AbstractSerializer {
 			desClass = ser.readType(this, is);
 		}
 
-		return ser.deserialize(this, is, desClass);
+		Object ret = ser.deserialize(this, is, desClass);
+		if (ret instanceof IReplaceSerializable) {
+			return ((IReplaceSerializable) ret).readResolve();
+		}
+		return ret;
 	}
 
+	// TODO remove
+	static final ThrowableReplacer throwableReplacer = new ThrowableReplacer();
+	@Override
+	public void setServiceRegistry(CoolRMIServiceRegistry serviceReg) {
+		super.setServiceRegistry(serviceReg);
+		serviceReg.addReplaceType(throwableReplacer);
+	}
 }

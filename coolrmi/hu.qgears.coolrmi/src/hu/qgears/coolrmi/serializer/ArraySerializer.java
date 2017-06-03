@@ -41,6 +41,11 @@ class ArraySerializer extends TypeSerializer {
 	@Override
 	public void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException {
+		if (o == null) {
+			Utils.write32(os, -1);
+			return;
+		}
+
 		int len = Array.getLength(o);
 		Utils.write32(os, len);
 
@@ -55,6 +60,10 @@ class ArraySerializer extends TypeSerializer {
 			Class<?> cls)
 			throws Exception {
 		int len = Utils.read32(is);
+
+		if (len == -1) {
+			return null;
+		}
 
 		Class<?> elemCls = cls.getComponentType();
 		Class<?> loadCls = serializer.getClassForSerialization(elemCls);

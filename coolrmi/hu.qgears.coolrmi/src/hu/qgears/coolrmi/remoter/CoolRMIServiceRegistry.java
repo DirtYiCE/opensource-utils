@@ -75,21 +75,7 @@ public class CoolRMIServiceRegistry {
 			throw new RuntimeException("Replace type was already registered.");
 		}
 	}
-	/**
-	 * Replace the object just before serialization to an other type.
-	 * See {@link CoolRMIReplaceEntry}
-	 * @param obj
-	 * @return
-	 */
-	public Object replaceObject(Object obj)
-	{
-		CoolRMIReplaceEntry replace=replaceTypes.get(obj.getClass());
-		if(replace==null)
-		{
-			return null;
-		}
-		return replace.doReplace(obj);
-	}
+
 	/**
 	 * In case the class is not found in the map we traverse each superclasses
 	 * to find if it has a replace object entry.
@@ -99,30 +85,33 @@ public class CoolRMIServiceRegistry {
 	 * @param obj
 	 * @return
 	 */
-	public Object replaceObjectHeavy(Object obj) {
-		CoolRMIReplaceEntry found;
-		if(replaceTypes.containsKey(obj))
-		{
-			found=replaceTypes.get(obj);
+	public Object replaceObject(Object obj) {
+		if (obj == null) {
+			return null;
 		}
-		else
-		{
-			found=null;
-			for(CoolRMIReplaceEntry e: replaceTypes.values())
-			{
-				if(e.getTypeToReplace().isAssignableFrom(obj.getClass()))
-				{
-					found=e;
+
+		Class<?> cls = obj.getClass();
+
+		CoolRMIReplaceEntry replacer = getReplacer(cls);
+		if (replacer == null) {
+			return obj;
+		}
+		return replacer.doReplace(obj);
+	}
+
+	public CoolRMIReplaceEntry getReplacer(Class<?> cls) {
+		if (replaceTypes.containsKey(cls)) {
+			return replaceTypes.get(cls);
+		} else {
+			CoolRMIReplaceEntry found = null;
+			for (CoolRMIReplaceEntry e : replaceTypes.values()) {
+				if (e != null && e.getTypeToReplace().isAssignableFrom(cls)) {
+					found = e;
 					break;
 				}
 			}
-			replaceTypes.put(obj.getClass(), found);
-			
+			replaceTypes.put(cls, found);
+			return found;
 		}
-		if(found==null)
-		{
-			return null;
-		}
-		return found.doReplace(obj);
 	}
 }

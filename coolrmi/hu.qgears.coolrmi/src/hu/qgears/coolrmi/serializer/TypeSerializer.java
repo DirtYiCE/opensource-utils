@@ -20,9 +20,11 @@ public abstract class TypeSerializer {
 		os.write(type.ordinal());
 	}
 
-	public abstract Class<?> readType(PortableSerializer serializer,
+	public Class<?> readType(PortableSerializer serializer,
 			InputStream is)
-			throws IOException, ClassNotFoundException;
+			throws IOException, ClassNotFoundException {
+		return primitiveClass != null ? primitiveClass : serializedClass;
+	}
 
 	public abstract void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException;

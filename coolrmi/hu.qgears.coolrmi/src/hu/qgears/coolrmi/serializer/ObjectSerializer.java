@@ -55,7 +55,7 @@ class ObjectSerializer extends TypeSerializer {
 				if (!Modifier.isTransient(mods) && !Modifier.isStatic(mods)) {
 					Utils.writeString(os, f.getName());
 					f.setAccessible(true);
-					Class<?> x = null; // TODO serializer.getClassForSerialization(f.getType());
+					Class<?> x = serializer.getClassForSerialization(f.getType());
 					Object fieldVal = null;
 					try {
 						fieldVal = f.get(o);
@@ -107,7 +107,7 @@ class ObjectSerializer extends TypeSerializer {
 				}
 			}
 			field.setAccessible(true);
-			Class<?> x = null; // TODO serializer.getClassForSerialization(field.getType());
+			Class<?> x = serializer.getClassForSerialization(field.getType());
 			field.set(instance, serializer.deserialize(is, x));
 		}
 
