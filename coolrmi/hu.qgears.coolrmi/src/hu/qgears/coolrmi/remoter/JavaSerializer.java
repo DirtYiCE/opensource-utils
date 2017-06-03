@@ -9,21 +9,23 @@ import hu.qgears.coolrmi.CoolRMIObjectOutputStream;
 
 
 
-public class JavaSerializer implements ISerializer {
+public class JavaSerializer extends AbstractSerializer {
 	@Override
-	public byte[] serialize(CoolRMIServiceRegistry serviceReg, Object o) throws IOException
+	public byte[] serialize(Object o) throws IOException
 	{
 		ByteArrayOutputStream bos=new ByteArrayOutputStream();
-		CoolRMIObjectOutputStream oos=new CoolRMIObjectOutputStream(serviceReg, bos);
+		CoolRMIObjectOutputStream oos = new CoolRMIObjectOutputStream(
+				getServiceRegistry(), bos);
 		oos.writeObject(o);
 		oos.close();
 		return bos.toByteArray();
 	}
 	@Override
-	public Object deserialize(byte[] bs, ClassLoader classLoader) throws IOException, ClassNotFoundException
+	public Object deserialize(byte[] bs) throws IOException, ClassNotFoundException
 	{
 		ByteArrayInputStream bis=new ByteArrayInputStream(bs);
-		CoolRMIObjectInputStream ois=new CoolRMIObjectInputStream(classLoader, bis);
+		CoolRMIObjectInputStream ois = new CoolRMIObjectInputStream(
+				getClassLoader(), bis);
 		try {
 			return ois.readObject();
 		} finally{

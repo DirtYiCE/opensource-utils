@@ -34,11 +34,10 @@ class ObjectSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader)
+	public Class<?> readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
 		String className = Utils.readString(is);
-		return classLoader.loadClass(className);
+		return serializer.getClassLoader().loadClass(className);
 	}
 
 	@Override
@@ -93,7 +92,7 @@ class ObjectSerializer extends TypeSerializer {
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader, Class<?> cls)
+			Class<?> cls)
 			throws Exception {
 		Object instance = getObject(cls);
 
@@ -109,7 +108,7 @@ class ObjectSerializer extends TypeSerializer {
 			}
 			field.setAccessible(true);
 			Class<?> x = null; // TODO serializer.getClassForSerialization(field.getType());
-			field.set(instance, serializer.deserialize(is, classLoader, x));
+			field.set(instance, serializer.deserialize(is, x));
 		}
 
 		return instance;

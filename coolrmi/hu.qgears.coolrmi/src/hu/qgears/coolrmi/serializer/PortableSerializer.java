@@ -10,10 +10,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import hu.qgears.coolrmi.remoter.CoolRMIServiceRegistry;
-import hu.qgears.coolrmi.remoter.ISerializer;
+import hu.qgears.coolrmi.remoter.AbstractSerializer;
 
-public class PortableSerializer implements ISerializer {
+public class PortableSerializer extends AbstractSerializer {
 	private static final TypeSerializer[] serializers = new TypeSerializer[] {
 		/*Null*/  new NullSerializer(),
 		/*Bool*/  new BooleanSerializer(),
@@ -57,8 +56,7 @@ public class PortableSerializer implements ISerializer {
 	}
 
 	@Override
-	public byte[] serialize(CoolRMIServiceRegistry serviceReg, Object o)
-			throws IOException {
+	public byte[] serialize(Object o) throws IOException {
 		ByteArrayOutputStream os = new ByteArrayOutputStream();
 		serialize(os, o, null);
 		return os.toByteArray();
@@ -108,14 +106,12 @@ public class PortableSerializer implements ISerializer {
 	}
 
 	@Override
-	public Object deserialize(byte[] bs, ClassLoader classLoader)
-			throws Exception {
+	public Object deserialize(byte[] bs) throws Exception {
 		ByteArrayInputStream is = new ByteArrayInputStream(bs);
-		return deserialize(is, classLoader, null);
+		return deserialize(is, null);
 	}
 
-	Object deserialize(InputStream is, ClassLoader classLoader,
-			Class<?> cls) throws Exception {
+	Object deserialize(InputStream is, Class<?> cls) throws Exception {
 		Class<?> desClass;
 		TypeSerializer ser;
 
@@ -124,10 +120,10 @@ public class PortableSerializer implements ISerializer {
 			desClass = cls;
 		} else {
 			ser = getSerializer(is.read());
-			desClass = ser.readType(this, is, classLoader);
+			desClass = ser.readType(this, is);
 		}
 
-		return ser.deserialize(this, is, classLoader, desClass);
+		return ser.deserialize(this, is, desClass);
 	}
 
 }

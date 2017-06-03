@@ -30,12 +30,11 @@ class ArraySerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader)
+	public Class<?> readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
 
 		TypeSerializer ser = serializer.getSerializer(is.read());
-		Class<?> elemCls = ser.readType(serializer, is, classLoader);
+		Class<?> elemCls = ser.readType(serializer, is);
 		return Array.newInstance(elemCls, 0).getClass();
 	}
 
@@ -53,7 +52,7 @@ class ArraySerializer extends TypeSerializer {
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader, Class<?> cls)
+			Class<?> cls)
 			throws Exception {
 		int len = Utils.read32(is);
 
@@ -63,7 +62,7 @@ class ArraySerializer extends TypeSerializer {
 
 		Object ret = Array.newInstance(elemCls, len);
 		for (int i = 0; i < len; ++i) {
-			Array.set(ret, i, serializer.deserialize(is, classLoader, loadCls));
+			Array.set(ret, i, serializer.deserialize(is, loadCls));
 		}
 
 		return ret;

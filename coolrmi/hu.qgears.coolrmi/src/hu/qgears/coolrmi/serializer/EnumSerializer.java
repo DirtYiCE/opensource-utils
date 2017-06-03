@@ -27,11 +27,10 @@ class EnumSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader)
+	public Class<?> readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
 		String className = Utils.readString(is);
-		return classLoader.loadClass(className);
+		return serializer.getClassLoader().loadClass(className);
 	}
 
 	@Override
@@ -43,7 +42,7 @@ class EnumSerializer extends TypeSerializer {
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader, Class<?> cls) throws IOException {
+			Class<?> cls) throws IOException {
 		String value = Utils.readString(is);
 		return Enum.valueOf((Class) cls, value);
 	}

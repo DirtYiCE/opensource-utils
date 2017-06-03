@@ -21,14 +21,14 @@ public abstract class TypeSerializer {
 	}
 
 	public abstract Class<?> readType(PortableSerializer serializer,
-			InputStream is, ClassLoader classLoader)
+			InputStream is)
 			throws IOException, ClassNotFoundException;
 
 	public abstract void serialize(PortableSerializer serializer, Object o,
 			OutputStream os) throws IOException;
 
 	public abstract Object deserialize(PortableSerializer serializer,
-			InputStream is, ClassLoader classLoader, Class<?> cls)
+			InputStream is, Class<?> cls)
 			throws Exception;
 
 	public boolean canSerializeIsSpecial() {

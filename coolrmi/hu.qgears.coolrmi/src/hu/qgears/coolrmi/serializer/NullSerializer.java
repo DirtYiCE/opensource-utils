@@ -10,8 +10,7 @@ class NullSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader) {
+	public Class<?> readType(PortableSerializer serializer, InputStream is) {
 		return null;
 	}
 
@@ -22,7 +21,7 @@ class NullSerializer extends TypeSerializer {
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader, Class<?> cls) {
+			Class<?> cls) {
 		return null;
 	}
 

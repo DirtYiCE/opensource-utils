@@ -10,8 +10,7 @@ class CharSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader) {
+	public Class<?> readType(PortableSerializer serializer, InputStream is) {
 		return Character.class;
 	}
 
@@ -23,7 +22,7 @@ class CharSerializer extends TypeSerializer {
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			ClassLoader classLoader, Class<?> cls) throws IOException {
+			Class<?> cls) throws IOException {
 		return (char) Utils.read16(is);
 	}
 

@@ -66,14 +66,16 @@ public class CoolRMIRemoter {
 	private Executor serverSideExecutor = null;
 	private boolean guaranteeOrdering;
 	private Map<Long, CoolRMIFutureReply> replies = new HashMap<Long, CoolRMIFutureReply>();
-	private ISerializer serializer = new JavaSerializer();
+	private AbstractSerializer serializer;
 
-	public ISerializer getSerializer() {
+	public AbstractSerializer getSerializer() {
 		return serializer;
 	}
 
-	public void setSerializer(ISerializer serializer) {
+	public void setSerializer(AbstractSerializer serializer) {
 		this.serializer = serializer;
+		serializer.setClassLoader(classLoader);
+		serializer.setServiceRegistry(servicesReg);
 	}
 
 	/**
@@ -106,6 +108,7 @@ public class CoolRMIRemoter {
 				}
 			};
 		}
+		setSerializer(new JavaSerializer());
 	}
 
 	public void setTimeoutMillis(long timeout) {
@@ -148,7 +151,7 @@ public class CoolRMIRemoter {
 	}
 
 	public void send(AbstractCoolRMIMessage message) throws IOException {
-		byte[] bs = serializer.serialize(servicesReg, message);
+		byte[] bs = serializer.serialize(message);
 		multiplexer.addMessageToSend(bs, message);
 	}
 	/**
@@ -172,7 +175,7 @@ public class CoolRMIRemoter {
 
 	public void messageReceived(byte[] msg) {
 		try {
-			Object message = serializer.deserialize(msg, classLoader);
+			Object message = serializer.deserialize(msg);
 			if (message instanceof AbstractCoolRMICall) {
 				AbstractCoolRMICall call = (AbstractCoolRMICall) message;
 				doCall(call);
@@ -226,6 +229,7 @@ public class CoolRMIRemoter {
 
 	public void setServiceRegistry(CoolRMIServiceRegistry servicesReg) {
 		this.servicesReg = servicesReg;
+		serializer.setServiceRegistry(servicesReg);
 	}
 
 	private void handleRequestServiceQuery(CoolRMIRequestServiceQuery message)

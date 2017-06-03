@@ -21,7 +21,7 @@ import java.net.SocketAddress;
 import java.net.SocketException;
 
 import hu.qgears.coolrmi.remoter.CoolRMIServiceRegistry;
-import hu.qgears.coolrmi.remoter.ISerializer;
+import hu.qgears.coolrmi.remoter.AbstractSerializer;
 import hu.qgears.coolrmi.streams.IConnection;
 import hu.qgears.coolrmi.streams.IConnectionServer;
 import hu.qgears.coolrmi.streams.IConnectionServerFactory;
@@ -43,7 +43,7 @@ public class CoolRMIServer {
 	private boolean guaranteeOrdering;
 	private long timeoutMillis=30000;
 	private boolean exit = false;
-	private ISerializer serializer;
+	private AbstractSerializer serializer;
 
 	public CoolRMIServiceRegistry getServiceRegistry() {
 		return serviceRegistry;
@@ -149,11 +149,11 @@ public class CoolRMIServer {
 		return classLoader;
 	}
 
-	public ISerializer getSerializer() {
+	public AbstractSerializer getSerializer() {
 		return serializer;
 	}
 
-	public void setSerializer(ISerializer serializer) {
+	public void setSerializer(AbstractSerializer serializer) {
 		this.serializer = serializer;
 	}
 }
