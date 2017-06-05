@@ -36,6 +36,14 @@ public class PortableSerializer extends AbstractSerializer {
 	private static final List<TypeSerializer> specialSerializer =
 			new ArrayList<TypeSerializer>();
 
+	private Map<String, String> javaToPortableNameMap = new HashMap<String, String>();
+	private Map<String, String> portableToJavaNameMap = new HashMap<String, String>();
+
+	public void addMapping(String java, String portable) {
+		javaToPortableNameMap.put(java, portable);
+		portableToJavaNameMap.put(portable, java);
+	}
+
 	static {
 		for (int i = 0; i < serializers.length; ++i) {
 			TypeSerializer s = serializers[i];
@@ -135,6 +143,24 @@ public class PortableSerializer extends AbstractSerializer {
 			return ((IReplaceSerializable) ret).readResolve();
 		}
 		return ret;
+	}
+
+	String getClassName(Class<?> cls) {
+		return getClassName(cls.getName());
+	}
+
+	String getClassName(String name) {
+		String name2 = javaToPortableNameMap.get(name);
+		return name2 == null ? name : name2;
+	}
+
+	Class<?> loadClass(String name) throws ClassNotFoundException {
+		String name2 = portableToJavaNameMap.get(name);
+		if (name2 != null) {
+			name = name2;
+		}
+
+		return getClassLoader().loadClass(name);
 	}
 
 	// TODO remove

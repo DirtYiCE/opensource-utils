@@ -30,14 +30,13 @@ class ObjectSerializer extends TypeSerializer {
 	public void writeType(PortableSerializer serializer, OutputStream os,
 			Class<?> cls) throws IOException {
 		super.writeType(serializer, os, cls);
-		Utils.writeString(os, cls.getName());
+		Utils.writeString(os, serializer.getClassName(cls));
 	}
 
 	@Override
 	public Class<?> readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		String className = Utils.readString(is);
-		return serializer.getClassLoader().loadClass(className);
+		return serializer.loadClass(Utils.readString(is));
 	}
 
 	@Override
@@ -48,7 +47,6 @@ class ObjectSerializer extends TypeSerializer {
 
 		while (PortableSerializable.class.isAssignableFrom(cls)) {
 			Field[] fields = cls.getDeclaredFields();
-			//Arrays.sort(fields);
 
 			for (Field f : fields)  {
 				int mods = f.getModifiers();
