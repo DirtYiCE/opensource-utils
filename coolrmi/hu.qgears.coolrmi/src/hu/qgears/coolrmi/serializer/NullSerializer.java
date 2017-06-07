@@ -6,17 +6,17 @@ import java.io.OutputStream;
 class NullSerializer extends TypeSerializer {
 
 	public NullSerializer() {
-		super(Type.Null, null, null);
+		super(TypeId.Null, null, null);
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) {
 	}
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls) {
+			JavaType typ) {
 		return null;
 	}
 

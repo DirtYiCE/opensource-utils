@@ -6,18 +6,18 @@ import java.io.OutputStream;
 
 class CharSerializer extends TypeSerializer {
 	public CharSerializer() {
-		super(Type.Char, Character.class, char.class);
+		super(TypeId.Char, Character.class, char.class);
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws IOException {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) throws IOException {
 		Utils.write16(os, (short) (char) (Character) o);
 	}
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls) throws IOException {
+			JavaType typ) throws IOException {
 		return (char) Utils.read16(is);
 	}
 

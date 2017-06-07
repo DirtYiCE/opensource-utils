@@ -6,18 +6,18 @@ import java.io.OutputStream;
 
 class ByteSerializer extends TypeSerializer {
 	public ByteSerializer() {
-		super(Type.Int8, Byte.class, byte.class);
+		super(TypeId.Int8, Byte.class, byte.class);
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws IOException {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) throws IOException {
 		os.write((Byte) o);
 	}
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls) throws IOException {
+			JavaType typ) throws IOException {
 		return (byte) is.read();
 	}
 

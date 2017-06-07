@@ -6,7 +6,7 @@ import java.io.OutputStream;
 
 class EnumSerializer extends TypeSerializer {
 	public EnumSerializer() {
-		super(Type.Enum, null, null);
+		super(TypeId.Enum, null, null);
 	}
 
 	@Override
@@ -15,35 +15,35 @@ class EnumSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public boolean canSerialize(PortableSerializer serializer, Class<?> o) {
-		return o.isEnum();
+	public boolean canSerialize(PortableSerializer serializer, JavaType typ) {
+		return typ.getCls().isEnum();
 	}
 
 	@Override
 	public void writeType(PortableSerializer serializer, OutputStream os,
-			Class<?> cls) throws IOException {
-		super.writeType(serializer, os, cls);
-		Utils.writeString(os, serializer.getClassName(cls));
+			JavaType typ) throws IOException {
+		super.writeType(serializer, os, typ);
+		Utils.writeString(os, serializer.getPortableClassName(typ));
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is)
+	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		return serializer.loadClass(Utils.readString(is));
+		return new JavaType(serializer.loadClass(Utils.readString(is)));
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws IOException {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) throws IOException {
 		Utils.writeString(os, ((Enum<?>) o).name());
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls) throws IOException {
+			JavaType typ) throws IOException {
 		String value = Utils.readString(is);
-		return Enum.valueOf((Class) cls, value);
+		return Enum.valueOf((Class) typ.getCls(), value);
 	}
 
 }

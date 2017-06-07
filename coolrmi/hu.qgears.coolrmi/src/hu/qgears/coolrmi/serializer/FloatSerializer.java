@@ -6,18 +6,18 @@ import java.io.OutputStream;
 
 class FloatSerializer extends TypeSerializer {
 	public FloatSerializer() {
-		super(Type.Float, Float.class, float.class);
+		super(TypeId.Float, Float.class, float.class);
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws IOException {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) throws IOException {
 		Utils.write32(os, Float.floatToRawIntBits((Float) o));
 	}
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls) throws IOException {
+			JavaType typ) throws IOException {
 		return Float.intBitsToFloat(Utils.read32(is));
 	}
 

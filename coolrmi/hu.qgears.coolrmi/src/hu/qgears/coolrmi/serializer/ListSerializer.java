@@ -3,11 +3,14 @@ package hu.qgears.coolrmi.serializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Array;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
-class ArraySerializer extends TypeSerializer {
-	public ArraySerializer() {
-		super(TypeId.Array, null, null);
+public class ListSerializer extends TypeSerializer {
+
+	public ListSerializer() {
+		super(TypeId.List, null, null);
 	}
 
 	@Override
@@ -17,26 +20,26 @@ class ArraySerializer extends TypeSerializer {
 
 	@Override
 	public boolean canSerialize(PortableSerializer serializer, JavaType typ) {
-		return typ.getCls().isArray();
+		return List.class.isAssignableFrom(typ.getCls());
+	}
+
+	private Type getElementType(JavaType typ) {
+		Type[] generic = typ.getGenericTypes();
+		return generic.length >= 1 ? generic[0] : Object.class;
 	}
 
 	@Override
 	public void writeType(PortableSerializer serializer, OutputStream os,
 			JavaType typ) throws IOException {
 		super.writeType(serializer, os, typ);
-		Class<?> elems = typ.getCls().getComponentType();
-		TypeSerializer elemSer = serializer.getSerializer(new JavaType(elems));
-
-		elemSer.writeType(serializer, os, new JavaType(elems));
+		Utils.writeString(os, serializer.getPortableClassName(getElementType(typ)));
 	}
 
 	@Override
 	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-
-		TypeSerializer ser = serializer.getSerializer(is.read());
-		JavaType elemCls = ser.readType(serializer, is);
-		return new JavaType(Array.newInstance(elemCls.getCls(), 0));
+		Class<?> items = serializer.loadClass(Utils.readString(is));
+		return new JavaType(ArrayList.class, new Type[] { items });
 	}
 
 	@Override
@@ -46,13 +49,12 @@ class ArraySerializer extends TypeSerializer {
 			Utils.write32(os, -1);
 			return;
 		}
+		List<?> lst = (List<?>) o;
+		Utils.write32(os, lst.size());
 
-		int len = Array.getLength(o);
-		Utils.write32(os, len);
-
-		JavaType serCls = new JavaType(o.getClass().getComponentType());
-		for (int i = 0; i < len; ++i) {
-			serializer.serialize(os, Array.get(o, i), serCls);
+		JavaType elemType = new JavaType(getElementType(typ));
+		for (Object el : lst) {
+			serializer.serialize(os, el, elemType);
 		}
 	}
 
@@ -60,20 +62,17 @@ class ArraySerializer extends TypeSerializer {
 	public Object deserialize(PortableSerializer serializer, InputStream is,
 			JavaType typ) throws Exception {
 		int len = Utils.read32(is);
-
 		if (len == -1) {
 			return null;
 		}
 
-		Class<?> elemCls = typ.getCls().getComponentType();
-		JavaType loadCls = new JavaType(elemCls);
+		List<Object> lst = new ArrayList<Object>(len);
+		JavaType elemType = new JavaType(getElementType(typ));
 
-
-		Object ret = Array.newInstance(elemCls, len);
 		for (int i = 0; i < len; ++i) {
-			Array.set(ret, i, serializer.deserialize(is, loadCls));
+			lst.add(serializer.deserialize(is, elemType));
 		}
-
-		return ret;
+		return lst;
 	}
+
 }

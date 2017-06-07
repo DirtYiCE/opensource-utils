@@ -7,12 +7,13 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.Type;
 
 import sun.reflect.ReflectionFactory;
 
 class ObjectSerializer extends TypeSerializer {
 	public ObjectSerializer() {
-		super(Type.Object, Object.class, null);
+		super(TypeId.Object, Object.class, null);
 	}
 
 	@Override
@@ -21,28 +22,44 @@ class ObjectSerializer extends TypeSerializer {
 	}
 
 	@Override
-	public boolean canSerialize(PortableSerializer serializer, Class<?> o) {
-		return o == Object.class ||
-				PortableSerializable.class.isAssignableFrom(o);
+	public boolean canSerialize(PortableSerializer serializer, JavaType typ) {
+		return typ.getCls() == Object.class ||
+				PortableSerializable.class.isAssignableFrom(typ.getCls());
 	}
 
 	@Override
 	public void writeType(PortableSerializer serializer, OutputStream os,
-			Class<?> cls) throws IOException {
-		super.writeType(serializer, os, cls);
-		Utils.writeString(os, serializer.getClassName(cls));
+			JavaType typ) throws IOException {
+		super.writeType(serializer, os, typ);
+		Utils.writeString(os, serializer.getPortableClassName(typ));
+
+		// generic arguments
+		Type[] generic = typ.getGenericTypes();
+		Utils.write32(os, generic.length);
+		for (int i = 0; i < generic.length; ++i) {
+			Utils.writeString(os, serializer
+					.getPortableClassName(generic[i].getTypeName()));
+		}
 	}
 
 	@Override
-	public Class<?> readType(PortableSerializer serializer, InputStream is)
+	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		return serializer.loadClass(Utils.readString(is));
+		Class<?> cls = serializer.loadClass(Utils.readString(is));
+
+		int len = Utils.read32(is);
+		Type[] generic = new Type[len];
+		// load generic arguments
+		for (int i = 0; i < len; ++i) {
+			generic[i] = serializer.loadClass(Utils.readString(is));
+		}
+
+		return new JavaType(cls, generic);
 	}
 
 	@Override
-	public void serialize(PortableSerializer serializer,
-			Object o, OutputStream os)
-			throws IOException {
+	public void serialize(PortableSerializer serializer, OutputStream os,
+			Object o, JavaType typ) throws IOException {
 		Class<?> cls = o.getClass();
 
 		while (PortableSerializable.class.isAssignableFrom(cls)) {
@@ -53,7 +70,7 @@ class ObjectSerializer extends TypeSerializer {
 				if (!Modifier.isTransient(mods) && !Modifier.isStatic(mods)) {
 					Utils.writeString(os, f.getName());
 					f.setAccessible(true);
-					Class<?> x = serializer.getClassForSerialization(f.getType());
+					JavaType x = new JavaType(f.getType(), f.getGenericType());
 					Object fieldVal = null;
 					try {
 						fieldVal = f.get(o);
@@ -90,8 +107,8 @@ class ObjectSerializer extends TypeSerializer {
 
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
-			Class<?> cls)
-			throws Exception {
+			JavaType typ) throws Exception {
+		Class<?> cls = typ.getCls();
 		Object instance = getObject(cls);
 
 		String fieldName;
@@ -105,7 +122,7 @@ class ObjectSerializer extends TypeSerializer {
 				}
 			}
 			field.setAccessible(true);
-			Class<?> x = serializer.getClassForSerialization(field.getType());
+			JavaType x = new JavaType(field.getType(), field.getGenericType());
 			field.set(instance, serializer.deserialize(is, x));
 		}
 

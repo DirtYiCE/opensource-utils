@@ -5,40 +5,42 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 public abstract class TypeSerializer {
-	final Type type;
+	final TypeId type;
 	final Class<?> serializedClass, primitiveClass;
+	private final JavaType javaType;
 
-	public TypeSerializer(Type type, Class<?> serializedClass,
+	public TypeSerializer(TypeId type, Class<?> serializedClass,
 			Class<?> primitveClass) {
 		this.type = type;
 		this.serializedClass = serializedClass;
 		this.primitiveClass = primitveClass;
+		this.javaType = new JavaType(
+				primitiveClass != null ? primitiveClass : serializedClass);
 	}
 
 	public void writeType(PortableSerializer serializer, OutputStream os,
-			Class<?> cls) throws IOException {
+			JavaType typ) throws IOException {
 		os.write(type.ordinal());
 	}
 
-	public Class<?> readType(PortableSerializer serializer,
-			InputStream is)
+	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		return primitiveClass != null ? primitiveClass : serializedClass;
+		return javaType;
 	}
 
-	public abstract void serialize(PortableSerializer serializer, Object o,
-			OutputStream os) throws IOException;
+	public abstract void serialize(PortableSerializer serializer,
+			OutputStream os, Object o, JavaType typ) throws IOException;
 
 	public abstract Object deserialize(PortableSerializer serializer,
-			InputStream is, Class<?> cls)
-			throws Exception;
+			InputStream is, JavaType typ) throws Exception;
 
 	public boolean canSerializeIsSpecial() {
 		return false;
 	}
 
-	public boolean canSerialize(PortableSerializer serializer, Class<?> o) {
-		return o.equals(serializedClass) || o.equals(primitiveClass);
+	public boolean canSerialize(PortableSerializer serializer, JavaType typ) {
+		return typ.getCls().equals(serializedClass)
+				|| typ.getCls().equals(primitiveClass);
 	}
 
 	public boolean isPolymorphic() {

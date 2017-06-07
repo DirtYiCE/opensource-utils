@@ -1,6 +1,6 @@
 package hu.qgears.coolrmi.serializer;
 
-public enum Type {
+public enum TypeId {
 	Null,
 	Bool,
 	Int8,
@@ -14,4 +14,6 @@ public enum Type {
 	String,
 	Object,
 	Array,
+	Exception,
+	List,
 }

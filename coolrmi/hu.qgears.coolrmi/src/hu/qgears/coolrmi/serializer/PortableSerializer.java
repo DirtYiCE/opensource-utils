@@ -5,13 +5,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import hu.qgears.coolrmi.remoter.AbstractSerializer;
-import hu.qgears.coolrmi.remoter.CoolRMIServiceRegistry;
 import hu.qgears.coolrmi.remoter.IReplaceSerializable;
 
 public class PortableSerializer extends AbstractSerializer {
@@ -29,6 +29,8 @@ public class PortableSerializer extends AbstractSerializer {
 		/*String*/new StringSerializer(),
 		/*Object*/new ObjectSerializer(),
 		/*Array*/ new ArraySerializer(),
+		/*Exception*/ new ExceptionSerializer(),
+		/*List*/  new ListSerializer(),
 	};
 
 	private static final Map<Class<?>, TypeSerializer> classMap =
@@ -72,20 +74,23 @@ public class PortableSerializer extends AbstractSerializer {
 		return os.toByteArray();
 	}
 
-	TypeSerializer getSerializer(Class<?> cls) {
-		if (getServiceRegistry().getReplacer(cls) != null) {
-			cls = IReplaceSerializable.class;
+	private final JavaType replaceSerializableType = new JavaType(
+			IReplaceSerializable.class);
+	TypeSerializer getSerializer(JavaType typ) {
+		if (getServiceRegistry().getReplacer(typ.getCls()) != null) {
+			typ = replaceSerializableType;
 		}
 
-		TypeSerializer s = classMap.get(cls);
+		TypeSerializer s = classMap.get(typ.getCls());
 		if (s == null) {
 			for (TypeSerializer sc : specialSerializer) {
-				if (sc.canSerialize(this, cls)) {
+				if (sc.canSerialize(this, typ)) {
 					return sc;
 				}
 			}
 
-			throw new RuntimeException("Unserializable class " + cls.getName());
+			throw new RuntimeException(
+					"Unserializable class " + typ.getCls().getName());
 		} else {
 			return s;
 		}
@@ -95,29 +100,34 @@ public class PortableSerializer extends AbstractSerializer {
 		return serializers[idx];
 	}
 
-	Class<?> getClassForSerialization(Class<?> cls) {
-		TypeSerializer ser = getSerializer(cls);
-		return ser.isPolymorphic() ? null : cls;
-	}
-
-	void serialize(OutputStream os, Object o, Class<?> cls) throws IOException {
+	void serialize(OutputStream os, Object o, JavaType typ)
+			throws IOException {
 		TypeSerializer s;
 		o = getServiceRegistry().replaceObject(o);
 
-		boolean full = cls == null;
-		if (cls == null && o == null) {
-			s = serializers[Type.Null.ordinal()];
+		boolean full = typ == null;
+		if (typ == null && o == null) {
+			s = serializers[TypeId.Null.ordinal()];
 		} else {
-			if (cls == null) {
-				cls = o.getClass();
+			if (typ == null) {
+				typ = new JavaType(o);
 			}
-			s = getSerializer(cls);
+			s = getSerializer(typ);
+			if (s.isPolymorphic()) {
+				full = true;
+				if (o != null) {
+					typ = new JavaType(typ, o);
+					s = getSerializer(typ);
+				} else {
+					s = serializers[TypeId.Null.ordinal()];
+				}
+			}
 		}
 
 		if (full) {
-			s.writeType(this, os, cls);
+			s.writeType(this, os, typ);
 		}
-		s.serialize(this, o, os);
+		s.serialize(this, os, o, typ);
 	}
 
 	@Override
@@ -126,48 +136,49 @@ public class PortableSerializer extends AbstractSerializer {
 		return deserialize(is, null);
 	}
 
-	Object deserialize(InputStream is, Class<?> cls) throws Exception {
-		Class<?> desClass;
+	Object deserialize(InputStream is, JavaType typ) throws Exception {
+		JavaType desType;
 		TypeSerializer ser;
 
-		if (cls != null) {
-			ser = getSerializer(cls);
-			desClass = cls;
+		if (typ != null) {
+			ser = getSerializer(typ);
+			if (ser.isPolymorphic()) {
+				ser = getSerializer(is.read());
+				desType = ser.readType(this, is);
+			} else {
+				desType = typ;
+			}
 		} else {
 			ser = getSerializer(is.read());
-			desClass = ser.readType(this, is);
+			desType = ser.readType(this, is);
 		}
 
-		Object ret = ser.deserialize(this, is, desClass);
+		Object ret = ser.deserialize(this, is, desType);
 		if (ret instanceof IReplaceSerializable) {
 			return ((IReplaceSerializable) ret).readResolve();
 		}
 		return ret;
 	}
 
-	String getClassName(Class<?> cls) {
-		return getClassName(cls.getName());
+	String getPortableClassName(Type typ) {
+		return getPortableClassName(typ.getTypeName());
 	}
 
-	String getClassName(String name) {
+	String getPortableClassName(JavaType typ) {
+		return getPortableClassName(typ.getCls().getName());
+	}
+
+	String getPortableClassName(String name) {
 		String name2 = javaToPortableNameMap.get(name);
 		return name2 == null ? name : name2;
 	}
 
-	Class<?> loadClass(String name) throws ClassNotFoundException {
+	String getJavaClassName(String name) {
 		String name2 = portableToJavaNameMap.get(name);
-		if (name2 != null) {
-			name = name2;
-		}
-
-		return getClassLoader().loadClass(name);
+		return name2 == null ? name : name2;
 	}
 
-	// TODO remove
-	static final ThrowableReplacer throwableReplacer = new ThrowableReplacer();
-	@Override
-	public void setServiceRegistry(CoolRMIServiceRegistry serviceReg) {
-		super.setServiceRegistry(serviceReg);
-		serviceReg.addReplaceType(throwableReplacer);
+	Class<?> loadClass(String name) throws ClassNotFoundException {
+		return getClassLoader().loadClass(getJavaClassName(name));
 	}
 }
