@@ -1,7 +1,5 @@
 package hu.qgears.coolrmi.multiplexer;
 
-import java.io.ByteArrayInputStream;
-
 import hu.qgears.coolrmi.messages.AbstractCoolRMIMessage;
 
 /**
@@ -10,18 +8,14 @@ import hu.qgears.coolrmi.messages.AbstractCoolRMIMessage;
  *
  */
 public class SocketMultiplexerSource {
-	private long id;
-	private ByteArrayInputStream toSend;
+	private byte[] toSend;
 	private AbstractCoolRMIMessage message;
-	public long getId() {
-		return id;
-	}
-	public ByteArrayInputStream getToSend() {
+
+	public byte[] getToSend() {
 		return toSend;
 	}
-	public SocketMultiplexerSource(long id, ByteArrayInputStream toSend, AbstractCoolRMIMessage message) {
+	public SocketMultiplexerSource(byte[] toSend, AbstractCoolRMIMessage message) {
 		super();
-		this.id = id;
 		this.toSend = toSend;
 		this.message=message;
 	}

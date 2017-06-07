@@ -126,7 +126,7 @@ public class CoolRMIRemoter {
 		this.sock = sock;
 		multiplexer = new SocketMultiplexer(
 				sock.getInputStream(), sock
-				.getOutputStream(), new SocketMultiplexerListener(), guaranteeOrdering);
+				.getOutputStream(), new SocketMultiplexerListener());
 		connected = true;
 		multiplexer.start();
 	}
