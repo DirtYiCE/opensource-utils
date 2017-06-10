@@ -23,3 +23,19 @@ hs_err_pid*
 #shared objects
 *.so
 
+
+# .net/Rider
+coolrmi/CoolRMI.Net*/obj
+# User-specific stuff:
+coolrmi/.idea/**/workspace.xml
+coolrmi/.idea/**/tasks.xml
+coolrmi/.idea/dictionaries
+
+# Sensitive or high-churn files:
+coolrmi/.idea/**/dataSources/
+coolrmi/.idea/**/dataSources.ids
+coolrmi/.idea/**/dataSources.xml
+coolrmi/.idea/**/dataSources.local.xml
+coolrmi/.idea/**/sqlDataSources.xml
+coolrmi/.idea/**/dynamic.xml
+coolrmi/.idea/**/uiDesigner.xml
