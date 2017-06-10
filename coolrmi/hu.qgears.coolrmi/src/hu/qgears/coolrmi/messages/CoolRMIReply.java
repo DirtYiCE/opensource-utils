@@ -55,7 +55,7 @@ public class CoolRMIReply extends AbstractCoolRMIMethodCallReply
 	public void resolveArgumentsOnClient(CoolRMIRemoter remoter)
 	{
 		if (getException() == null) {
-			ret=remoter.resolveProxyInParamerClientSide(getRet());
+			ret=remoter.resolveProxyInParameterClientSide(getRet());
 		}else
 		{
 			StackTraceElement[] stprev=getException().getStackTrace();

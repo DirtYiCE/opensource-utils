@@ -72,7 +72,7 @@ public class CoolRMIProxy implements InvocationHandler {
 			}
 			AbstractCoolRMIMethodCallReply reply;
 			try {
-				args=remoter.resolveProxyInParamersServerSide(args);
+				args=remoter.resolveProxyInParametersServerSide(args);
 				AbstractCoolRMICall call=callAggregator.createCall(method, args);
 				if(call!=null)
 				{

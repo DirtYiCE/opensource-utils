@@ -64,7 +64,6 @@ public class CoolRMIRemoter {
 	private boolean connected = false;
 	private boolean closed = false;
 	private Executor serverSideExecutor = null;
-	private boolean guaranteeOrdering;
 	private Map<Long, CoolRMIFutureReply> replies = new HashMap<Long, CoolRMIFutureReply>();
 	private AbstractSerializer serializer;
 
@@ -93,7 +92,6 @@ public class CoolRMIRemoter {
 	private static final ThreadLocal<CoolRMIRemoter> currentRemoter=new ThreadLocal<CoolRMIRemoter>();
 	public CoolRMIRemoter(ClassLoader classLoader, boolean guaranteeOrdering) {
 		this.classLoader = classLoader;
-		this.guaranteeOrdering=guaranteeOrdering;
 		if(guaranteeOrdering)
 		{
 			serverSideExecutor=Executors.newSingleThreadExecutor(new NamedThreadFactory("Cool RMI executor"));
@@ -262,27 +260,27 @@ public class CoolRMIRemoter {
 		abstarctCall.executeServerSide(this, serverSideExecutor);
 	}
 
-	protected Object[] resolveProxyInParamersServerSide(Object[] args) throws IOException {
+	protected Object[] resolveProxyInParametersServerSide(Object[] args) throws IOException {
 		if(args!=null)
 		{
 			for(int i=0;i<args.length;++i)
 			{
-				args[i]=resolveProxyInParamerServerSide(args[i]);
+				args[i]=resolveProxyInParameterServerSide(args[i]);
 			}
 		}
 		return args;
 	}
-	public Object[] resolveProxyInParamersClientSide(Object[] args) {
+	public Object[] resolveProxyInParametersClientSide(Object[] args) {
 		if(args!=null)
 		{
 			for(int i=0;i<args.length;++i)
 			{
-				args[i]=resolveProxyInParamerClientSide(args[i]);
+				args[i]=resolveProxyInParameterClientSide(args[i]);
 			}
 		}
 		return args;
 	}
-	public Object resolveProxyInParamerServerSide(Object arg) throws IOException {
+	public Object resolveProxyInParameterServerSide(Object arg) throws IOException {
 		CoolRMIServiceRegistry reg=getServiceRegistry();
 		if(arg!=null)
 		{
@@ -303,7 +301,7 @@ public class CoolRMIRemoter {
 		}
 		return arg;
 	}
-	public Object resolveProxyInParamerClientSide(Object arg) {
+	public Object resolveProxyInParameterClientSide(Object arg) {
 		if(arg instanceof CoolRMIProxyPlaceHolder)
 		{
 			CoolRMIProxyPlaceHolder ph=(CoolRMIProxyPlaceHolder) arg;

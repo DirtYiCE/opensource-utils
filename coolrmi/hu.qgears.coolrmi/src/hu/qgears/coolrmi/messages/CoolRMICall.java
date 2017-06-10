@@ -91,11 +91,11 @@ public class CoolRMICall
 			Method[] methods = clazz.getMethods();
 			for (final Method m : methods) {
 				if (reqMethod.equals(m.getName())) {
-					final Object[] args=coolRMIRemoter.resolveProxyInParamersClientSide(getArgs());
+					final Object[] args=coolRMIRemoter.resolveProxyInParametersClientSide(getArgs());
 					try {
 						coolRMIRemoter.registerCurrentRemoter();
 						Object ret = m.invoke(service, args);
-						ret=coolRMIRemoter.resolveProxyInParamerServerSide(ret);
+						ret=coolRMIRemoter.resolveProxyInParameterServerSide(ret);
 						CoolRMIReply reply = new CoolRMIReply(callId,
 								ret, null);
 						return reply;
