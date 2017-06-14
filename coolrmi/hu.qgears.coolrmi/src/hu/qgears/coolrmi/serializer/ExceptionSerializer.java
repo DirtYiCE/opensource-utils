@@ -21,9 +21,27 @@ public class ExceptionSerializer extends TypeSerializer {
 		return Throwable.class.isAssignableFrom(typ.getCls());
 	}
 
+	@Override
+	public boolean isPolymorphic() {
+		return true;
+	}
+
+	@Override
+	public void writeType(PortableSerializer serializer, OutputStream os,
+			JavaType typ) throws IOException {
+		super.writeType(serializer, os, typ);
+		serializer.writeClassName(os, typ);
+	}
+
+	@Override
+	public JavaType readType(PortableSerializer serializer, InputStream is)
+			throws IOException, ClassNotFoundException {
+		return serializer.readClassName(is);
+	}
+
+
 	/*
 	 * Format:
-	 *  string exceptionType
 	 *  string message
 	 *  int stacktraceCount times:
 	 *    string class
@@ -36,13 +54,7 @@ public class ExceptionSerializer extends TypeSerializer {
 	@Override
 	public void serialize(PortableSerializer serializer, OutputStream os,
 			Object o, JavaType typ) throws IOException {
-		if (o == null) {
-			Utils.writeString(os, null);
-			return;
-		}
-
 		Throwable t = (Throwable) o;
-		Utils.writeString(os, serializer.getPortableClassName(t.getClass()));
 		Utils.writeString(os, t.getMessage());
 
 		StackTraceElement[] trace = t.getStackTrace();
@@ -61,11 +73,6 @@ public class ExceptionSerializer extends TypeSerializer {
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
 			JavaType typ) throws Exception {
-		String className = Utils.readString(is);
-		if (className == null) {
-			return null;
-		}
-
 		String message = Utils.readString(is);
 		int len = Utils.read32(is);
 
@@ -81,8 +88,7 @@ public class ExceptionSerializer extends TypeSerializer {
 
 		Throwable cause = (Throwable) serializer.deserialize(is, throwableType);
 
-		Class<?> excClass = serializer.loadClass(className);
-		Throwable t = (Throwable) excClass
+		Throwable t = (Throwable) typ.getCls()
 				.getConstructor(String.class, Throwable.class)
 				.newInstance(message, cause);
 		t.setStackTrace(trace);

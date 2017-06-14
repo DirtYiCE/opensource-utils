@@ -23,13 +23,13 @@ class EnumSerializer extends TypeSerializer {
 	public void writeType(PortableSerializer serializer, OutputStream os,
 			JavaType typ) throws IOException {
 		super.writeType(serializer, os, typ);
-		Utils.writeString(os, serializer.getPortableClassName(typ));
+		serializer.writeClassName(os, typ);
 	}
 
 	@Override
 	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		return new JavaType(serializer.loadClass(Utils.readString(is)));
+		return serializer.readClassName(is);
 	}
 
 	@Override

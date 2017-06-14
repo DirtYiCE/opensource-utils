@@ -33,8 +33,16 @@ namespace CoolRMI.Net.Messages
         {
             new Task(() =>
             {
-                var reply = ExecuteOnExecutorThread(remoter);
-                remoter.Send(reply);
+                try
+                {
+                    var reply = ExecuteOnExecutorThread(remoter);
+                    if (remoter.IsClosed) return;
+                    remoter.Send(reply);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                }
             }).Start(scheduler);
         }
 

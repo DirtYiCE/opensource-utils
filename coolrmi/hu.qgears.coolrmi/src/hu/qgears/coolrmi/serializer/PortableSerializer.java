@@ -173,12 +173,32 @@ public class PortableSerializer extends AbstractSerializer {
 		return name2 == null ? name : name2;
 	}
 
+	void writeClassName(OutputStream os, JavaType typ) throws IOException {
+		Utils.writeString(os, getPortableClassName(typ.getCls()));
+
+		for (JavaType x : typ.getGenericTypes()) {
+			writeClassName(os, x);
+		}
+	}
+
+
 	String getJavaClassName(String name) {
 		String name2 = portableToJavaNameMap.get(name);
 		return name2 == null ? name : name2;
 	}
 
-	Class<?> loadClass(String name) throws ClassNotFoundException {
+	JavaType readClassName(InputStream is) throws ClassNotFoundException, IOException {
+		Class<?> cls = loadClass(Utils.readString(is));
+
+		Type[] generics = cls.getTypeParameters();
+		JavaType[] jGenerics = new JavaType[generics.length];
+		for (int i = 0; i < generics.length; ++i) {
+			jGenerics[i] = readClassName(is);
+		}
+		return new JavaType(cls, jGenerics);
+	}
+
+	private Class<?> loadClass(String name) throws ClassNotFoundException {
 		return getClassLoader().loadClass(getJavaClassName(name));
 	}
 }

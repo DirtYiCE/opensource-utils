@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Example.Server
 {
@@ -7,7 +8,7 @@ namespace CoolRMI.Net.Example.Server
     {
         public static void Main(string[] args)
         {
-            var s = new CoolRMIServer(5656, true);
+            var s = new CoolRMIServer(new PortableSerializer(), 5656, true);
             s.ServiceRegistry.AddService(new CoolRMIService("TestService",
                 typeof(IService), new Service()));
             s.Start();

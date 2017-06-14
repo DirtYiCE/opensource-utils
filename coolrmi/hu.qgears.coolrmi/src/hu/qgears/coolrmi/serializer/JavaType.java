@@ -2,34 +2,32 @@ package hu.qgears.coolrmi.serializer;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
 
 public class JavaType {
-	private static final Type[] EMPTY_LIST = new Type[0];
+	private static final JavaType[] EMPTY_LIST = new JavaType[0];
+	public static final JavaType OBJECT_TYPE = new JavaType(Object.class);
 
-	private Class<?> cls;
-	private Type[] genericTypes = EMPTY_LIST;
+	private final Class<?> cls;
+	private JavaType[] genericTypes;
 
 	public JavaType(Class<?> cls) {
 		this.cls = cls;
 	}
 
-	public JavaType(Class<?> cls, Type[] genericTypes) {
+	public JavaType(Class<?> cls, JavaType[] genericTypes) {
 		this.cls = cls;
 		this.genericTypes = genericTypes;
 	}
 
 	public JavaType(Class<?> cls, Type genericType) {
 		this.cls = cls;
-		if (genericType instanceof ParameterizedType) {
-			this.genericTypes = ((ParameterizedType) genericType).getActualTypeArguments();
-		}
+		genFromParametrizedType(genericType);
 	}
 
 	public JavaType(Type typ) {
 		this.cls = (Class<?>) typ;
-		if (typ instanceof ParameterizedType) {
-			this.genericTypes = ((ParameterizedType) typ).getActualTypeArguments();
-		}
+		genFromParametrizedType(typ);
 	}
 
 	public JavaType(Object o) {
@@ -51,20 +49,59 @@ public class JavaType {
 	public Class<?> getCls() {
 		return cls;
 	}
-	public Type[] getGenericTypes() {
+	public JavaType[] getGenericTypes() {
+		if (genericTypes == null) {
+			genUnknownTypeParams();
+		}
 		return genericTypes;
+	}
+
+	private void genFromParametrizedType(Type genericType) {
+		if (genericType instanceof ParameterizedType) {
+			Type[] args = ((ParameterizedType) genericType).getActualTypeArguments();
+			genericTypes = new JavaType[args.length];
+			for (int i = 0; i < args.length; ++i) {
+				genericTypes[i] = new JavaType(args[i]);
+			}
+		}
+	}
+
+	private void genUnknownTypeParams() {
+		TypeVariable<?>[] pars = cls.getTypeParameters();
+		if (pars.length == 0) {
+			genericTypes = EMPTY_LIST;
+		} else {
+			System.err.println(
+					"Warning: unknown generic params for " + cls.getName());
+
+			genericTypes = new JavaType[pars.length];
+			for (int i = 0; i < pars.length; ++i) {
+				genericTypes[i] = OBJECT_TYPE;
+			}
+		}
 	}
 
 	@Override
 	public String toString() {
 		StringBuilder bld = new StringBuilder();
-		bld.append(cls.getName()).append('<');
-		for (int i = 0; i < genericTypes.length; ++i) {
+		appendToString(bld);
+		return bld.toString();
+	}
+
+	private void appendToString(StringBuilder bld) {
+		bld.append(cls.getName());
+		JavaType[] generics = getGenericTypes();
+		if (generics.length == 0) {
+			return;
+		}
+
+		bld.append('<');
+		for (int i = 0; i < generics.length; ++i) {
 			if (i > 0) {
 				bld.append(", ");
 			}
-			bld.append(genericTypes[i].getTypeName());
+			generics[i].appendToString(bld);
 		}
-		return bld.append('>').toString();
+		bld.append('>');
 	}
 }

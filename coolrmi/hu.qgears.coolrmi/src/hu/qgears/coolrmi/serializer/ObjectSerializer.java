@@ -7,7 +7,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Modifier;
-import java.lang.reflect.Type;
 
 import sun.reflect.ReflectionFactory;
 
@@ -31,30 +30,13 @@ class ObjectSerializer extends TypeSerializer {
 	public void writeType(PortableSerializer serializer, OutputStream os,
 			JavaType typ) throws IOException {
 		super.writeType(serializer, os, typ);
-		Utils.writeString(os, serializer.getPortableClassName(typ));
-
-		// generic arguments
-		Type[] generic = typ.getGenericTypes();
-		Utils.write32(os, generic.length);
-		for (int i = 0; i < generic.length; ++i) {
-			Utils.writeString(os, serializer
-					.getPortableClassName(generic[i].getTypeName()));
-		}
+		serializer.writeClassName(os, typ);
 	}
 
 	@Override
 	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		Class<?> cls = serializer.loadClass(Utils.readString(is));
-
-		int len = Utils.read32(is);
-		Type[] generic = new Type[len];
-		// load generic arguments
-		for (int i = 0; i < len; ++i) {
-			generic[i] = serializer.loadClass(Utils.readString(is));
-		}
-
-		return new JavaType(cls, generic);
+		return serializer.readClassName(is);
 	}
 
 	@Override
@@ -87,7 +69,7 @@ class ObjectSerializer extends TypeSerializer {
 
 			cls = cls.getSuperclass();
 		}
-		Utils.writeString(os, "");
+		Utils.writeString(os, null);
 	}
 
 	private static Object getObject(Class<?> cls) throws NoSuchMethodException,
@@ -112,7 +94,7 @@ class ObjectSerializer extends TypeSerializer {
 		Object instance = getObject(cls);
 
 		String fieldName;
-		while (!(fieldName = Utils.readString(is)).isEmpty()) {
+		while ((fieldName = Utils.readString(is)) != null) {
 			Field field = null;
 			while (field == null) {
 				try {

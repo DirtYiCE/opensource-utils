@@ -1,5 +1,5 @@
 ﻿using System;
-using CoolRMI.Net.Remoter;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Example.Client
 {
@@ -7,7 +7,7 @@ namespace CoolRMI.Net.Example.Client
     {
         public static void Main(string[] args)
         {
-            var c = new CoolRMIClient(new DotNetSerializer(), "localhost", 5656,
+            var c = new CoolRMIClient(new PortableSerializer(), "localhost", 5656,
                 true);
             c.ServiceRegistry.AddProxyType(typeof(CallbackImpl), typeof(ICallback));
             var s = c.GetService<IService>("TestService");

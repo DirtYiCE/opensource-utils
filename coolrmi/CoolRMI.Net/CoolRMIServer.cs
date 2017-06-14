@@ -27,7 +27,7 @@ namespace CoolRMI.Net
         public CoolRMIServiceRegistry ServiceRegistry { get; set; } =
             new CoolRMIServiceRegistry();
         public int TimeoutMillis { get; set; }
-        public AbstractSerializer Serializer { get; set; } = new DotNetSerializer();
+        public AbstractSerializer Serializer { get; set; }
 
         private readonly IConnectionServerFactory serverFactory;
         private readonly bool guaranteeOrdering;
@@ -42,8 +42,10 @@ namespace CoolRMI.Net
             this.guaranteeOrdering = guaranteeOrdering;
         }
 
-        public CoolRMIServer(int port, bool guaranteeOrdering)
+        public CoolRMIServer(AbstractSerializer serializer, int port,
+            bool guaranteeOrdering)
         {
+            Serializer = serializer;
             serverFactory =
                 new TcpServerFactory(new IPEndPoint(IPAddress.Any, port));
             this.guaranteeOrdering = guaranteeOrdering;

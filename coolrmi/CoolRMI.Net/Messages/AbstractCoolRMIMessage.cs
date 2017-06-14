@@ -1,10 +1,12 @@
 using System;
 using System.Threading.Tasks;
 using CoolRMI.Net.Remoter;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Messages
 {
     [Serializable]
+    [PortableSerializable]
     public abstract class AbstractCoolRMIMessage
     {
         public long QueryId { get; }

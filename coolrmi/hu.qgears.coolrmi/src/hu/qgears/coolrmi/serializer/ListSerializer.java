@@ -3,7 +3,6 @@ package hu.qgears.coolrmi.serializer;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,23 +22,22 @@ public class ListSerializer extends TypeSerializer {
 		return List.class.isAssignableFrom(typ.getCls());
 	}
 
-	private Type getElementType(JavaType typ) {
-		Type[] generic = typ.getGenericTypes();
-		return generic.length >= 1 ? generic[0] : Object.class;
+	public JavaType getElementType(JavaType typ) {
+		return typ.getGenericTypes()[0];
 	}
 
 	@Override
 	public void writeType(PortableSerializer serializer, OutputStream os,
 			JavaType typ) throws IOException {
 		super.writeType(serializer, os, typ);
-		Utils.writeString(os, serializer.getPortableClassName(getElementType(typ)));
+		serializer.writeClassName(os, getElementType(typ));
 	}
 
 	@Override
 	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		Class<?> items = serializer.loadClass(Utils.readString(is));
-		return new JavaType(ArrayList.class, new Type[] { items });
+		JavaType items = serializer.readClassName(is);
+		return new JavaType(ArrayList.class, new JavaType[] { items });
 	}
 
 	@Override
@@ -52,7 +50,7 @@ public class ListSerializer extends TypeSerializer {
 		List<?> lst = (List<?>) o;
 		Utils.write32(os, lst.size());
 
-		JavaType elemType = new JavaType(getElementType(typ));
+		JavaType elemType = getElementType(typ);
 		for (Object el : lst) {
 			serializer.serialize(os, el, elemType);
 		}
@@ -67,7 +65,7 @@ public class ListSerializer extends TypeSerializer {
 		}
 
 		List<Object> lst = new ArrayList<Object>(len);
-		JavaType elemType = new JavaType(getElementType(typ));
+		JavaType elemType = getElementType(typ);
 
 		for (int i = 0; i < len; ++i) {
 			lst.add(serializer.deserialize(is, elemType));
