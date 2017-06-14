@@ -36,27 +36,7 @@ namespace CoolRMI.Net.Serializer
         {
             var exc = (Exception) o;
             bw.WritePString(exc.Message);
-
-            var trace = new StackTrace(exc, true);
-            bw.Write(trace.FrameCount);
-            for (int i = 0; i < trace.FrameCount; ++i)
-            {
-                var item = trace.GetFrame(i);
-                var meth = item.GetMethod();
-                if (meth == null)
-                {
-                    bw.WritePString(null);
-                    bw.WritePString(null);
-                }
-                else
-                {
-                    bw.WritePString(serializer.GetPortableClassName(meth.DeclaringType));
-                    bw.WritePString(meth.Name);
-                }
-                bw.WritePString(item.GetFileName());
-                bw.Write(item.GetFileLineNumber());
-            }
-
+            bw.WritePString(exc.StackTrace);
             serializer.Serialize(bw, exc.InnerException, typeof(Exception));
         }
 
@@ -64,23 +44,13 @@ namespace CoolRMI.Net.Serializer
             BinaryReader br, Type typ)
         {
             var message = br.ReadPString();
-            var len = br.ReadInt32();
-
-            // todo...
-            var sb = new StringBuilder();
-            for (int i = 0; i < len; ++i)
-            {
-                sb.AppendFormat("  at {0}.{1} in {2}:{3}\n", br.ReadPString(),
-                    br.ReadPString(), br.ReadPString() ?? "<filename unknown>",
-                    br.ReadInt32());
-            }
-
+            var trace = br.ReadPString();
             var cause = serializer.Deserialize(br, typeof(Exception));
 
             var inst = Activator.CreateInstance(typ, message, cause);
             typ.GetField("_remoteStackTraceString",
                     BindingFlags.Instance | BindingFlags.NonPublic)
-                .SetValue(inst, sb.ToString());
+                .SetValue(inst, trace);
             return inst;
         }
     }
