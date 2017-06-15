@@ -1,5 +1,4 @@
 ﻿using System;
-using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Example.Client
 {
@@ -7,15 +6,15 @@ namespace CoolRMI.Net.Example.Client
     {
         public static void Main(string[] args)
         {
-            var c = new CoolRMIClient(new PortableSerializer(), "localhost", 5656,
-                true);
+            var serializer = Utils.GetSerializer(args);
+            var c = new CoolRMIClient(serializer, "localhost", 9000, true);
             c.ServiceRegistry.AddProxyType(typeof(CallbackImpl), typeof(ICallback));
-            var s = c.GetService<IService>("TestService");
-            Console.WriteLine(s.Echo("foo", 3));
+            var s = c.GetService<IService>("ExampleServiceV0.0.1");
+            Console.WriteLine(s.echo("foo", 3));
 
             try
             {
-                s.ThrowException();
+                s.exceptionExample();
             }
             catch (Exception e)
             {
@@ -23,7 +22,7 @@ namespace CoolRMI.Net.Example.Client
             }
 
             Console.WriteLine(DateTime.Now + " cb calling");
-            s.InitTimer(new CallbackImpl(c, s), 5000);
+            s.initTimer(new CallbackImpl(c, s), 5000);
         }
     }
 
@@ -38,7 +37,7 @@ namespace CoolRMI.Net.Example.Client
             this.service = service;
         }
 
-        public void Callback(string s)
+        public void callback(string s)
         {
             Console.WriteLine(DateTime.Now + " cb returned: " + s);
             ((ICoolRMIProxy) service).Dispose();

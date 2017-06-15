@@ -1,6 +1,5 @@
 using System;
 using System.Threading.Tasks;
-using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Example.Server
 {
@@ -8,32 +7,40 @@ namespace CoolRMI.Net.Example.Server
     {
         public static void Main(string[] args)
         {
-            var s = new CoolRMIServer(new PortableSerializer(), 5656, true);
-            s.ServiceRegistry.AddService(new CoolRMIService("TestService",
-                typeof(IService), new Service()));
+            var serializer = Utils.GetSerializer(args);
+            var s = new CoolRMIServer(serializer, 9000, true);
+            s.ServiceRegistry.AddService(new CoolRMIService(
+                "ExampleServiceV0.0.1", typeof(IService), new Service()));
             s.Start();
         }
     }
 
     public class Service : IService
     {
-        public string Echo(string s, int x)
+        public string echo(string s, int x)
         {
             return s + " " + x;
         }
 
-        public void ThrowException()
+        public void exceptionExample()
         {
             throw new Exception("Test exception");
         }
 
-        public void InitTimer(ICallback cb, int timeoutMillis)
+        public void initTimer(ICallback cb, long timeoutMillis)
         {
-            Task.Delay(timeoutMillis)
+            Task.Delay((int) timeoutMillis)
                 .ContinueWith(t =>
                 {
-                    cb.Callback("Server time now: "+DateTime.Now);
-                    (cb as ICoolRMIProxy)?.Dispose();
+                    try
+                    {
+                        cb.callback("Server time now: " + DateTime.Now);
+                        (cb as ICoolRMIProxy)?.Dispose();
+                    }
+                    catch (Exception e)
+                    {
+                        Console.WriteLine(e);
+                    }
                 });
         }
     }

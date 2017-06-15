@@ -6,11 +6,15 @@ import java.io.OutputStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import sun.reflect.ReflectionFactory;
 
-class ObjectSerializer extends TypeSerializer {
+public class ObjectSerializer extends TypeSerializer {
 	public ObjectSerializer() {
 		super(TypeId.Object, Object.class, null);
 	}
@@ -22,8 +26,10 @@ class ObjectSerializer extends TypeSerializer {
 
 	@Override
 	public boolean canSerialize(PortableSerializer serializer, JavaType typ) {
-		return typ.getCls() == Object.class ||
-				PortableSerializable.class.isAssignableFrom(typ.getCls());
+		Class<?> cls = typ.getCls();
+		return cls.equals(Object.class) ||
+				PortableSerializable.class.isAssignableFrom(cls) ||
+				ICustomPortableSerializable.class.isAssignableFrom(cls);
 	}
 
 	@Override
@@ -39,32 +45,84 @@ class ObjectSerializer extends TypeSerializer {
 		return serializer.readClassName(is);
 	}
 
+	private static class CacheEntry {
+		public String name;
+		public Field field;
+		public JavaType javaType;
+
+		public CacheEntry(String name, Field field) {
+			this.name = name;
+			this.field = field;
+			this.javaType = new JavaType(field.getType(), field.getGenericType());
+		}
+	}
+
+	private static ConcurrentHashMap<Class<?>, Map<String, CacheEntry>> TYPE_CACHE =
+			new ConcurrentHashMap<Class<?>, Map<String, CacheEntry>>();
+
+	private static Map<String, CacheEntry> getTypeCache(Class<?> cls) {
+		Map<String, CacheEntry> ret = TYPE_CACHE.get(cls);
+		if (ret != null) {
+			return ret;
+		}
+
+		ret = new HashMap<String, CacheEntry>();
+		Field[] fields = cls.getDeclaredFields();
+		for (Field f : fields) {
+			int mods = f.getModifiers();
+			if (Modifier.isTransient(mods) || Modifier.isStatic(mods)) {
+				continue;
+			}
+
+			PortableFieldName annot = f.getAnnotation(PortableFieldName.class);
+			String name;
+			if (annot != null) {
+				name = annot.name();
+			} else {
+				name = f.getName();
+			}
+
+			f.setAccessible(true);
+			if (ret.put(name, new CacheEntry(name, f)) != null) {
+				throw new RuntimeException("Duplicate field name '" + name
+						+ "' in class " + cls.getName());
+			}
+		}
+
+		// ignore if another thread already added it
+		TYPE_CACHE.putIfAbsent(cls, ret);
+		return ret;
+	}
+
 	@Override
 	public void serialize(PortableSerializer serializer, OutputStream os,
 			Object o, JavaType typ) throws IOException {
-		Class<?> cls = o.getClass();
+		if (o instanceof ICustomPortableSerializable) {
+			((ICustomPortableSerializable) o).serialize(serializer, os);
+		} else {
+			defaultSerialize(serializer, os, o, typ.getCls());
+		}
+	}
 
+	public static void defaultSerialize(PortableSerializer serializer,
+			OutputStream os, Object o, Class<?> cls)
+			throws IOException, RuntimeException {
 		while (PortableSerializable.class.isAssignableFrom(cls)) {
-			Field[] fields = cls.getDeclaredFields();
+			Map<String, CacheEntry> cache = getTypeCache(cls);
 
-			for (Field f : fields)  {
-				int mods = f.getModifiers();
-				if (!Modifier.isTransient(mods) && !Modifier.isStatic(mods)) {
-					Utils.writeString(os, f.getName());
-					f.setAccessible(true);
-					JavaType x = new JavaType(f.getType(), f.getGenericType());
-					Object fieldVal = null;
-					try {
-						fieldVal = f.get(o);
-					} catch (IllegalArgumentException e) {
-						// shouldn't happen
-						throw new RuntimeException(e);
-					} catch (IllegalAccessException e) {
-						// shouldn't happen
-						throw new RuntimeException(e);
-					}
-					serializer.serialize(os, fieldVal, x);
+			for (CacheEntry c : cache.values())  {
+				Utils.writeString(os, c.name);
+				Object fieldVal = null;
+				try {
+					fieldVal = c.field.get(o);
+				} catch (IllegalArgumentException e) {
+					// shouldn't happen
+					throw new RuntimeException(e);
+				} catch (IllegalAccessException e) {
+					// shouldn't happen
+					throw new RuntimeException(e);
 				}
+				serializer.serialize(os, fieldVal, c.javaType);
 			}
 
 			cls = cls.getSuperclass();
@@ -87,28 +145,44 @@ class ObjectSerializer extends TypeSerializer {
 		return ctor2.newInstance();
 	}
 
+	private static final Class<?>[] DESERIALIZER_ARGS = new Class<?>[] {
+		PortableSerializer.class,
+		InputStream.class
+	};
+
 	@Override
 	public Object deserialize(PortableSerializer serializer, InputStream is,
 			JavaType typ) throws Exception {
 		Class<?> cls = typ.getCls();
-		Object instance = getObject(cls);
 
-		String fieldName;
-		while ((fieldName = Utils.readString(is)) != null) {
-			Field field = null;
-			while (field == null) {
-				try {
-					field = cls.getDeclaredField(fieldName);
-				} catch (NoSuchFieldException e) {
-					cls = cls.getSuperclass();
-				}
+		if (ICustomPortableSerializable.class.isAssignableFrom(cls)) {
+			try {
+				Constructor<?> ctor = cls.getDeclaredConstructor(DESERIALIZER_ARGS);
+				ctor.setAccessible(true);
+				return ctor.newInstance(serializer, is);
+			} catch (NoSuchMethodException e) {
+				Method meth = cls.getDeclaredMethod("deserialize", DESERIALIZER_ARGS);
+				return meth.invoke(null, serializer, is);
 			}
-			field.setAccessible(true);
-			JavaType x = new JavaType(field.getType(), field.getGenericType());
-			field.set(instance, serializer.deserialize(is, x));
+		} else {
+			Object instance = getObject(cls);
+			defaultDeserialize(serializer, is, instance, cls);
+			return instance;
 		}
+	}
 
-		return instance;
+	public static void defaultDeserialize(PortableSerializer serializer,
+			InputStream is, Object o, Class<?> cls) throws Exception {
+		String fieldName;
+		Map<String, CacheEntry> cache = getTypeCache(cls);
+		while ((fieldName = Utils.readString(is)) != null) {
+			CacheEntry e;
+			while ((e = cache.get(fieldName)) == null) {
+				cls = cls.getSuperclass();
+				cache = getTypeCache(cls);
+			}
+			e.field.set(o, serializer.deserialize(is, e.javaType));
+		}
 	}
 
 	@Override

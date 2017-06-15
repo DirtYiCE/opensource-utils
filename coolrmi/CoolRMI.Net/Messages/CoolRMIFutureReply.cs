@@ -25,7 +25,7 @@ namespace CoolRMI.Net.Messages
         public AbstractCoolRMIReply WaitReply()
         {
             var task = src.Task;
-            if (!task.Wait(remoter.TimeoutMillis)) // TODO check timeout
+            if (!task.Wait(remoter.TimeoutMillis))
                 throw new CoolRMITimeoutException("Timeout executing call: " + CallId);
             remoter.RemoveAwaitingReply(this);
             if (task.IsCanceled) throw new OperationCanceledException();

@@ -11,6 +11,8 @@ import java.util.regex.Pattern;
 
 public class ExceptionSerializer extends TypeSerializer {
 	private static final JavaType throwableType = new JavaType(Throwable.class);
+	private static final JavaType runtimeExceptionType = new JavaType(
+			RuntimeException.class);
 
 	public ExceptionSerializer() {
 		super(TypeId.Exception, Throwable.class, null);
@@ -41,7 +43,11 @@ public class ExceptionSerializer extends TypeSerializer {
 	@Override
 	public JavaType readType(PortableSerializer serializer, InputStream is)
 			throws IOException, ClassNotFoundException {
-		return serializer.readClassName(is);
+		try {
+			return serializer.readClassName(is);
+		} catch (ClassNotFoundException c) {
+			return runtimeExceptionType;
+		}
 	}
 
 
@@ -86,7 +92,7 @@ public class ExceptionSerializer extends TypeSerializer {
 	private static final Pattern JAVA_TRACE = Pattern.compile("^\tat (.*)\\.([^.]*)\\((.*?)(?::(\\d+))?\\)$");
 
 	// dotnet: msdn example "   at Namespace.Class.Method(String args)"
-	private static final Pattern DOTNET_TRACE = Pattern.compile("^ *at (.*)\\.([^.]*)\\((.*)\\)");
+	private static final Pattern DOTNET_TRACE = Pattern.compile("^ *at (.*)\\.([^.]* *\\(.*\\)(?: \\[0x[0-9a-fA-F]+\\])?)(?: in (.*):(\\d+))? *$");
 	// mono: "  at Namespace.Class.Method[Generic] (Args) [0x12345] in file:line"
 	//       "  at (wrapper managed-to-native) System.Object:__icall_wrapper_mono_remoting_wrapper (intptr,intptr)"
 
@@ -96,11 +102,15 @@ public class ExceptionSerializer extends TypeSerializer {
 			JavaType typ) throws Exception {
 		String message = Utils.readString(is);
 		String strTrace = Utils.readString(is);
-		String[] traceItems = strTrace.split("\n");
+		StackTraceElement[] trace = null;
 
-		StackTraceElement[] trace = new StackTraceElement[traceItems.length];
-		for (int i = 0; i < trace.length; ++i) {
-			trace[i] = parseStackTraceLine(traceItems[i]);
+		if (strTrace != null) {
+			String[] traceItems = strTrace.split("\n");
+
+			trace = new StackTraceElement[traceItems.length];
+			for (int i = 0; i < trace.length; ++i) {
+				trace[i] = parseStackTraceLine(traceItems[i]);
+			}
 		}
 
 		Throwable cause = (Throwable) serializer.deserialize(is, throwableType);
@@ -108,7 +118,9 @@ public class ExceptionSerializer extends TypeSerializer {
 		Throwable t = (Throwable) typ.getCls()
 				.getConstructor(String.class, Throwable.class)
 				.newInstance(message, cause);
-		t.setStackTrace(trace);
+		if (trace != null) {
+			t.setStackTrace(trace);
+		}
 
 		return t;
 	}

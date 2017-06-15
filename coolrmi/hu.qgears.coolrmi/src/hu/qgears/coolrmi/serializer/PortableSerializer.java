@@ -41,9 +41,17 @@ public class PortableSerializer extends AbstractSerializer {
 	private Map<String, String> javaToPortableNameMap = new HashMap<String, String>();
 	private Map<String, String> portableToJavaNameMap = new HashMap<String, String>();
 
+	private Map<String, String> javaToPortableNamespaceMap = new HashMap<String, String>();
+	private Map<String, String> portableToJavaNamespaceMap = new HashMap<String, String>();
+
 	public void addMapping(String java, String portable) {
 		javaToPortableNameMap.put(java, portable);
 		portableToJavaNameMap.put(portable, java);
+	}
+
+	public void addNamespaceMapping(String ns, String portable) {
+		javaToPortableNamespaceMap.put(ns, portable);
+		portableToJavaNamespaceMap.put(portable, ns);
 	}
 
 	static {
@@ -65,6 +73,13 @@ public class PortableSerializer extends AbstractSerializer {
 				}
 			}
 		}
+	}
+
+	public PortableSerializer() {
+		// add standard types
+		addMapping(Object.class.getName(), "Object");
+		addNamespaceMapping("hu.qgears.coolrmi", "coolrmi");
+		addNamespaceMapping("hu.qgears.coolrmi.messages", "coolrmi.messages");
 	}
 
 	@Override
@@ -160,21 +175,30 @@ public class PortableSerializer extends AbstractSerializer {
 		return ret;
 	}
 
-	String getPortableClassName(Type typ) {
-		return getPortableClassName(typ.getTypeName());
-	}
-
 	String getPortableClassName(JavaType typ) {
-		return getPortableClassName(typ.getCls().getName());
+		String javaName = typ.getCls().getName();
+		String portableName = javaToPortableNameMap.get(javaName);
+		if (portableName != null) {
+			return portableName;
+		}
+
+		String ns = typ.getCls().getPackage().getName();
+		portableName = javaToPortableNamespaceMap.get(ns);
+		if (portableName != null) {
+			portableName = portableName + '.'
+					+ javaName.substring(javaName.lastIndexOf('.') + 1);
+		} else {
+			System.err.println("Warning: no portable name for " + javaName);
+			portableName = javaName;
+		}
+
+		// cache for future
+		addMapping(javaName, portableName);
+		return portableName;
 	}
 
-	String getPortableClassName(String name) {
-		String name2 = javaToPortableNameMap.get(name);
-		return name2 == null ? name : name2;
-	}
-
-	void writeClassName(OutputStream os, JavaType typ) throws IOException {
-		Utils.writeString(os, getPortableClassName(typ.getCls()));
+	public void writeClassName(OutputStream os, JavaType typ) throws IOException {
+		Utils.writeString(os, getPortableClassName(typ));
 
 		for (JavaType x : typ.getGenericTypes()) {
 			writeClassName(os, x);
@@ -182,12 +206,28 @@ public class PortableSerializer extends AbstractSerializer {
 	}
 
 
-	String getJavaClassName(String name) {
-		String name2 = portableToJavaNameMap.get(name);
-		return name2 == null ? name : name2;
+	String getJavaClassName(String portableName) {
+		String javaName = portableToJavaNameMap.get(portableName);
+		if (javaName != null) {
+			return javaName;
+		}
+
+		int dotPos = portableName.lastIndexOf('.');
+		String ns = portableName.substring(0, dotPos);
+		javaName = portableToJavaNamespaceMap.get(ns);
+		if (javaName != null) {
+			javaName = javaName + '.' + portableName.substring(dotPos + 1);
+		} else {
+			javaName = portableName;
+		}
+
+		// cache for future
+		addMapping(javaName, portableName);
+		return javaName;
 	}
 
-	JavaType readClassName(InputStream is) throws ClassNotFoundException, IOException {
+	public JavaType readClassName(InputStream is)
+			throws ClassNotFoundException, IOException {
 		Class<?> cls = loadClass(Utils.readString(is));
 
 		Type[] generics = cls.getTypeParameters();

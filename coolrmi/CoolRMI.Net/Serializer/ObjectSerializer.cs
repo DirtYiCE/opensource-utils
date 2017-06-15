@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 using System.Runtime.Serialization;
+using System.Text.RegularExpressions;
 
 namespace CoolRMI.Net.Serializer
 {
@@ -14,7 +17,8 @@ namespace CoolRMI.Net.Serializer
         {
             return typ == typeof(object) ||
                    Attribute.GetCustomAttribute(typ,
-                       typeof(PortableSerializableAttribute)) != null;
+                       typeof(PortableSerializableAttribute)) != null ||
+                   typeof(ICustomPortableSerializable).IsAssignableFrom(typ);
         }
         public override bool IsPolymorphic => true;
 
@@ -31,22 +35,68 @@ namespace CoolRMI.Net.Serializer
         }
 
 
-        private const BindingFlags getBindingFlags =
+        private const BindingFlags GetBindingFlags =
             BindingFlags.DeclaredOnly | BindingFlags.Instance |
             BindingFlags.Public | BindingFlags.NonPublic;
 
+        private static readonly ConcurrentDictionary<Type, Dictionary<string, FieldInfo>>
+            TypeCache = new ConcurrentDictionary<Type, Dictionary<string, FieldInfo>>();
+
+        private static readonly Regex BackingFieldPattern = new Regex(@"^<(.*)>k__BackingField$");
+
+        private static Dictionary<string, FieldInfo> GetTypeCache(Type typ)
+        {
+            Dictionary<string, FieldInfo> ret;
+            if (TypeCache.TryGetValue(typ, out ret)) return ret;
+
+            ret = new Dictionary<string, FieldInfo>();
+            var fields = typ.GetFields(GetBindingFlags);
+            foreach (var f in fields)
+            {
+                if (f.IsNotSerialized) continue;
+                var nameAttr =
+                    f.GetCustomAttribute<PortableFieldNameAttribute>();
+
+                string name;
+                Match m;
+                if (nameAttr != null) name = nameAttr.Name;
+                else if ((m = BackingFieldPattern.Match(f.Name)) != Match.Empty)
+                {
+                    name = m.Groups[1].Value;
+                    // get attribute of the property
+                    nameAttr = typ.GetProperty(name, GetBindingFlags)
+                        .GetCustomAttribute<PortableFieldNameAttribute>();
+                    if (nameAttr != null) name = nameAttr.Name;
+                }
+                else name = f.Name;
+
+                ret.Add(name, f);
+            }
+
+            // ignore if another thread already added it
+            TypeCache.TryAdd(typ, ret);
+            return ret;
+        }
+
         public override void Serialize(PortableSerializer serializer,
+            BinaryWriter bw, object o, Type typ)
+        {
+            var cust = o as ICustomPortableSerializable;
+            if (cust != null) cust.Serialize(serializer, bw);
+            else DefaultSerialize(serializer, bw, o, typ);
+        }
+
+        public static void DefaultSerialize(PortableSerializer serializer,
             BinaryWriter bw, object o, Type typ)
         {
             while (Attribute.GetCustomAttribute(typ,
                        typeof(PortableSerializableAttribute)) != null)
             {
-                var fields = typ.GetFields(getBindingFlags);
-                foreach (var f in fields)
+                var cache = GetTypeCache(typ);
+                foreach (var c in cache)
                 {
-                    if (f.IsNotSerialized) continue;
-                    bw.WritePString(f.Name);
-                    serializer.Serialize(bw, f.GetValue(o), f.FieldType);
+                    bw.WritePString(c.Key);
+                    serializer.Serialize(bw, c.Value.GetValue(o), c.Value.FieldType);
                 }
 
                 typ = typ.BaseType;
@@ -67,31 +117,56 @@ namespace CoolRMI.Net.Serializer
                 typ = typ.BaseType;
             }
 
-            var ctor = typ.GetConstructor(getBindingFlags, null, EmptyTypes, null);
+            var ctor = typ.GetConstructor(GetBindingFlags, null, EmptyTypes, null);
             ctor.Invoke(obj, EmptyObjects);
 
             return obj;
         }
 
+        private static readonly Type[] DeserializerArgs = {
+            typeof(PortableSerializer),
+            typeof(BinaryReader)
+        };
         public override object Deserialize(PortableSerializer serializer,
             BinaryReader br, Type typ)
         {
-            var instance = CreateObject(typ);
+            if (typeof(ICustomPortableSerializable).IsAssignableFrom(typ))
+            {
+                var ctor = typ.GetConstructor(GetBindingFlags, null,
+                    DeserializerArgs, null);
+                if (ctor != null)
+                    return ctor.Invoke(new object[] {serializer, br});
+                var stat = typ.GetMethod("Deserialize",
+                    BindingFlags.Static | BindingFlags.Public |
+                    BindingFlags.NonPublic, null, DeserializerArgs, null);
+                if (stat != null)
+                    return stat.Invoke(null, new object[] {serializer, br});
+                throw new Exception("Invalid ICustomPortableSerializable");
+            }
+            else
+            {
+                var instance = CreateObject(typ);
+                DefaultDeserialize(serializer, br, instance, typ);
+                return instance;
+            }
+        }
 
+        public static void DefaultDeserialize(PortableSerializer serializer,
+            BinaryReader br, object o, Type typ)
+        {
             string fieldName;
+            var cache = GetTypeCache(typ);
             while ((fieldName = br.ReadPString()) != null)
             {
-                var field = typ.GetField(fieldName, getBindingFlags);
-                while (field == null)
+                FieldInfo field;
+                while (!cache.TryGetValue(fieldName, out field))
                 {
                     typ = typ.BaseType;
-                    field = typ.GetField(fieldName, getBindingFlags);
+                    cache = GetTypeCache(typ);
                 }
 
-                field.SetValue(instance, serializer.Deserialize(br, field.FieldType));
+                field.SetValue(o, serializer.Deserialize(br, field.FieldType));
             }
-
-            return instance;
         }
     }
 }

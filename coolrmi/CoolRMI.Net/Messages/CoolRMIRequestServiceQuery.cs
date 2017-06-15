@@ -1,10 +1,12 @@
 using System;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Messages
 {
     [Serializable]
     public class CoolRMIRequestServiceQuery : AbstractCoolRMIMessage
     {
+        [PortableFieldName("serviceName")]
         public string ServiceName { get; }
         public override string Name => ToString();
 
@@ -23,7 +25,9 @@ namespace CoolRMI.Net.Messages
     [Serializable]
     public class CoolRMIRequestServiceReply : AbstractCoolRMIReply
     {
+        [PortableFieldName("proxyId")]
         public long ProxyId { get; }
+        [PortableFieldName("interfaceName")]
         public string InterfaceName { get; }
         public override string Name => ToString();
 

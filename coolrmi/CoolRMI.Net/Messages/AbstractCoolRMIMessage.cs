@@ -9,6 +9,7 @@ namespace CoolRMI.Net.Messages
     [PortableSerializable]
     public abstract class AbstractCoolRMIMessage
     {
+        [PortableFieldName("queryId")]
         public long QueryId { get; }
         public abstract string Name { get; }
 

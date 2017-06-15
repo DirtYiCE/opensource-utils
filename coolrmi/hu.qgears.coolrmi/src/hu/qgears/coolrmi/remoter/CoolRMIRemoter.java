@@ -181,8 +181,6 @@ public class CoolRMIRemoter {
 				close();
 			} else if (message instanceof CoolRMIRequestServiceQuery) {
 				handleRequestServiceQuery((CoolRMIRequestServiceQuery) message);
-			} else if (message instanceof CoolRMIRequestServiceQuery) {
-				handleRequestServiceQuery((CoolRMIRequestServiceQuery) message);
 			} else if (message instanceof AbstractCoolRMIReply) {
 				handleReply((AbstractCoolRMIReply) message);
 			} else if (message instanceof CoolRMIDisposeProxy) {

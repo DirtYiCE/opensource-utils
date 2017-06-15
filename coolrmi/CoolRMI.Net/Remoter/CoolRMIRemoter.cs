@@ -154,7 +154,7 @@ namespace CoolRMI.Net.Remoter
 
         private void HandleCreateProxy(CoolRMICreateProxy message)
         {
-            var ifaceType = Type.GetType(message.IfaceName);
+            var ifaceType = message.Iface;
             var proxy = new CoolRMIProxy(this, message.ProxyId, ifaceType);
             proxies.Add(proxy.Id, proxy);
             Send(new CoolRMICreateProxyReply(message.QueryId));
@@ -337,7 +337,7 @@ namespace CoolRMI.Net.Remoter
             var sso = CreateProxyObject(service);
             var ret = new CoolRMIServerSideProxy(this, sso);
             var req = new CoolRMICreateProxy(GetNextCallId(), sso.ProxyId,
-                sso.Iface.AssemblyQualifiedName);
+                sso.Iface);
             var replyFut = GetAbstractReply(req.QueryId);
             Send(req);
             replyFut.WaitReply();

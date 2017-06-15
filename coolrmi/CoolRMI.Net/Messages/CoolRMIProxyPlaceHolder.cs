@@ -7,6 +7,7 @@ namespace CoolRMI.Net.Messages
     [PortableSerializable]
     public class CoolRMIProxyPlaceHolder
     {
+        [PortableFieldName("proxyId")]
         public long ProxyId { get; }
 
         public CoolRMIProxyPlaceHolder(long proxyId)

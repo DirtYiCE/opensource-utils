@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using CoolRMI.Net.Remoter;
 
 namespace CoolRMI.Net.Serializer
@@ -34,6 +35,47 @@ namespace CoolRMI.Net.Serializer
             new Dictionary<string, string>();
         private readonly Dictionary<string, string> portableToDotNetNameMap =
             new Dictionary<string, string>();
+
+        private struct NamespaceEntry : IEquatable<NamespaceEntry>
+        {
+            public readonly string Namespace;
+            public readonly AssemblyName AssemblyName;
+
+            public NamespaceEntry(string ns, AssemblyName assemblyName)
+            {
+                Namespace = ns;
+                AssemblyName = assemblyName;
+            }
+
+            public bool Equals(NamespaceEntry other)
+            {
+                return string.Equals(Namespace, other.Namespace) &&
+                       Equals(AssemblyName.FullName,
+                           other.AssemblyName.FullName);
+            }
+
+            public override bool Equals(object obj)
+            {
+                if (ReferenceEquals(null, obj)) return false;
+                return obj is NamespaceEntry && Equals((NamespaceEntry) obj);
+            }
+
+            public override int GetHashCode()
+            {
+                unchecked
+                {
+                    return (Namespace.GetHashCode() * 397) ^
+                           AssemblyName.FullName.GetHashCode();
+                }
+            }
+        }
+
+        private readonly Dictionary<NamespaceEntry, string>
+            dotNetToPortableNamespaceMap =
+                new Dictionary<NamespaceEntry, string>();
+        private readonly Dictionary<string, NamespaceEntry>
+            portableToDotNetNamespaceMap =
+                new Dictionary<string, NamespaceEntry>();
 
         #region Replacer
 
@@ -79,6 +121,15 @@ namespace CoolRMI.Net.Serializer
             portableToDotNetNameMap.Add(portable, dotNet);
         }
 
+        public void AddNamespaceMapping(string ns, AssemblyName assemblyName,
+            string portable)
+        {
+            dotNetToPortableNamespaceMap.Add(
+                new NamespaceEntry(ns, assemblyName), portable);
+            portableToDotNetNamespaceMap.Add(portable,
+                new NamespaceEntry(ns, assemblyName));
+        }
+
         static PortableSerializer()
         {
             for (int i = 0; i < Serializers.Length; ++i)
@@ -92,6 +143,13 @@ namespace CoolRMI.Net.Serializer
                 if (s.DotNetType != null) ClassMap.Add(s.DotNetType, s);
                 if (s.CanSerializeIsSpecial) SpecialSerializers.Add(s);
             }
+        }
+
+        public PortableSerializer()
+        {
+            AddMapping(typeof(object).AssemblyQualifiedName, "Object");
+            AddNamespaceMapping("CoolRMI.Net", GetType().Assembly.GetName(), "coolrmi");
+            AddNamespaceMapping("CoolRMI.Net.Messages", GetType().Assembly.GetName(), "coolrmi.messages");
         }
 
         public override byte[] Serialize(object o)
@@ -192,17 +250,30 @@ namespace CoolRMI.Net.Serializer
         internal string GetPortableClassName(Type typ)
         {
             if (typ.IsGenericType) typ = typ.GetGenericTypeDefinition();
-            return GetPortableClassName(typ.AssemblyQualifiedName);
+
+            var dotNetName = typ.AssemblyQualifiedName;
+            string portableName;
+            if (dotNetToPortableNameMap.TryGetValue(dotNetName, out portableName))
+                return portableName;
+
+            if (dotNetToPortableNamespaceMap.TryGetValue(
+                new NamespaceEntry(typ.Namespace, typ.Assembly.GetName()),
+                out portableName))
+            {
+                portableName = portableName + "." + typ.Name;
+            }
+            else
+            {
+                Console.WriteLine("Warning: no portable name for " + dotNetName);
+                portableName = dotNetName;
+            }
+
+            // cache for future
+            AddMapping(dotNetName, portableName);
+            return portableName;
         }
 
-        internal string GetPortableClassName(string name)
-        {
-            string name2;
-            return dotNetToPortableNameMap.TryGetValue(name, out name2)
-                ? name2 : name;
-        }
-
-        internal void WriteClassName(BinaryWriter bw, Type typ)
+        public void WriteClassName(BinaryWriter bw, Type typ)
         {
             bw.WritePString(GetPortableClassName(typ));
 
@@ -210,17 +281,36 @@ namespace CoolRMI.Net.Serializer
                 WriteClassName(bw, t);
         }
 
-        internal string GetDotNetClassName(string name)
+        internal string GetDotNetClassName(string portableName)
         {
-            string name2;
-            return portableToDotNetNameMap.TryGetValue(name, out name2)
-                ? name2 : name;
+            string dotNetName;
+            if (portableToDotNetNameMap.TryGetValue(portableName, out dotNetName))
+                return dotNetName;
+
+            var dotPos = portableName.LastIndexOf('.');
+            var ns = portableName.Substring(0, dotPos);
+            NamespaceEntry entry;
+            if (portableToDotNetNamespaceMap.TryGetValue(ns, out entry))
+            {
+                var name = portableName.Substring(dotPos + 1);
+                dotNetName = entry.Namespace + '.' + name + ", " +
+                             entry.AssemblyName;
+            }
+            else
+            {
+                Console.WriteLine("Warning: can't resolve portable name " + portableName);
+                dotNetName = portableName;
+            }
+
+            // cache for future
+            AddMapping(dotNetName, portableName);
+            return dotNetName;
         }
 
-        internal Type ReadClassName(BinaryReader rd)
+        public Type ReadClassName(BinaryReader rd)
         {
             var typ = Type.GetType(GetDotNetClassName(rd.ReadPString()));
-            if (typ.IsGenericType)
+            if (typ != null && typ.IsGenericType)
             {
                 var args = typ.GetGenericArguments();
                 for (int i = 0; i < args.Length; ++i)

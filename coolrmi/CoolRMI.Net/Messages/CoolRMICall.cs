@@ -2,15 +2,20 @@ using System;
 using System.Reflection;
 using System.Threading.Tasks;
 using CoolRMI.Net.Remoter;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Messages
 {
     [Serializable]
     public class CoolRMICall : AbstractCoolRMICall
     {
+        [PortableFieldName("proxyId")]
         public long ProxyId { get; }
+        [PortableFieldName("method")]
         public string Method { get; }
+        [PortableFieldName("args")]
         public object[] Args { get; }
+        [PortableFieldName("stopOnException")]
         public bool IsStopOnException { get; }
 
         public CoolRMICall(long callId, long proxyId, string method,

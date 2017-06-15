@@ -10,6 +10,7 @@ public class Client {
 		// Create client by configuring the TCP client socket.
 		// The client is already started after this command.
 		CoolRMIClient c=new CoolRMIClient(Client.class.getClassLoader(), new InetSocketAddress("localhost", Server.port), true);
+		c.setSerializer(Server.getSerializer(args));
 		// Configure callback proxy type and serialization replace type
 		c.setServiceRegistry(RemotingConfiguration.createConfiguration());
 		// Get service object by id and interface
@@ -18,7 +19,7 @@ public class Client {
 		System.out.println(s.echo("Hello CoolRMI!", 3));
 		int[] arr=new int[]{42};
 		IntBuffer ib=IntBuffer.wrap(arr);
-		System.out.println(s.nonSerializableArgument(ib));
+		//System.out.println(s.nonSerializableArgument(ib));
 		try
 		{
 			s.exceptionExample();

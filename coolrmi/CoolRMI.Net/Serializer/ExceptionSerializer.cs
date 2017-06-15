@@ -1,8 +1,6 @@
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Reflection;
-using System.Text;
 
 namespace CoolRMI.Net.Serializer
 {
@@ -28,7 +26,7 @@ namespace CoolRMI.Net.Serializer
 
         public override Type ReadType(PortableSerializer serializer, BinaryReader br)
         {
-            return serializer.ReadClassName(br);
+            return serializer.ReadClassName(br) ?? typeof(Exception);
         }
 
         public override void Serialize(PortableSerializer serializer,
@@ -48,7 +46,7 @@ namespace CoolRMI.Net.Serializer
             var cause = serializer.Deserialize(br, typeof(Exception));
 
             var inst = Activator.CreateInstance(typ, message, cause);
-            typ.GetField("_remoteStackTraceString",
+            typeof(Exception).GetField("_remoteStackTraceString",
                     BindingFlags.Instance | BindingFlags.NonPublic)
                 .SetValue(inst, trace);
             return inst;

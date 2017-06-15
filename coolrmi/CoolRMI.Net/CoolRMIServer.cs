@@ -26,7 +26,7 @@ namespace CoolRMI.Net
     {
         public CoolRMIServiceRegistry ServiceRegistry { get; set; } =
             new CoolRMIServiceRegistry();
-        public int TimeoutMillis { get; set; }
+        public int TimeoutMillis { get; set; } = 30000;
         public AbstractSerializer Serializer { get; set; }
 
         private readonly IConnectionServerFactory serverFactory;

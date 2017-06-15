@@ -1,5 +1,6 @@
 using System;
 using CoolRMI.Net.Remoter;
+using CoolRMI.Net.Serializer;
 
 namespace CoolRMI.Net.Messages
 {
@@ -8,6 +9,7 @@ namespace CoolRMI.Net.Messages
     {
         private object ret;
         public override string Name => ToString();
+        [PortableFieldName("exception")]
         public override Exception Exception { get; }
         public override object Ret => ret;
 

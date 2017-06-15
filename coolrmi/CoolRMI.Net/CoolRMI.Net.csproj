@@ -70,7 +70,7 @@
     <Compile Include="Serializer\ExceptionSerializer.cs" />
     <Compile Include="Serializer\ListSerializer.cs" />
     <Compile Include="Serializer\ObjectSerializer.cs" />
-    <Compile Include="Serializer\PortableSerializableAttribute.cs" />
+    <Compile Include="Serializer\PortableSerializable.cs" />
     <Compile Include="Serializer\PortableSerializer.cs" />
     <Compile Include="Serializer\PrimitiveSerializers.cs" />
     <Compile Include="Serializer\Replace.cs" />
